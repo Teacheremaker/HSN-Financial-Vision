@@ -1,5 +1,8 @@
 
-import { PlusCircle, Save } from "lucide-react";
+'use client';
+
+import { useState } from 'react';
+import { PlusCircle, Save, MoreHorizontal, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,11 +20,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import type { OperationalCost } from "@/types";
 
-const costs: OperationalCost[] = [
+const initialCosts: OperationalCost[] = [
     { id: "C-01", costItem: "Salaires", category: "Fixe", monthlyCost: 150000, notes: "Inclut tout le personnel" },
     { id: "C-02", costItem: "Maintenance de l'infrastructure", category: "Fixe", monthlyCost: 75000, notes: "Maintenance planifiée" },
     { id: "C-03", costItem: "Carburant", category: "Variable", monthlyCost: 45000, notes: "Pour la flotte de véhicules" },
@@ -30,19 +47,48 @@ const costs: OperationalCost[] = [
 ];
 
 export default function CostsPage() {
+    const [costs, setCosts] = useState(initialCosts);
+    const [editingRowId, setEditingRowId] = useState<string | null>(null);
+
+    const handleUpdate = (id: string, field: keyof OperationalCost, value: string | number) => {
+        setCosts(currentCosts =>
+            currentCosts.map(cost =>
+                cost.id === id ? { ...cost, [field]: value } : cost
+            )
+        );
+    };
+
+    const handleAddNew = () => {
+        const newId = `C-${String(Date.now()).slice(-5)}`;
+        const newCost: OperationalCost = {
+            id: newId,
+            costItem: "Nouveau coût",
+            category: "Variable",
+            monthlyCost: 0,
+            notes: "",
+        };
+        setCosts(currentCosts => [...currentCosts, newCost]);
+        setEditingRowId(newId);
+    };
+
+    const handleDelete = (id: string) => {
+        setCosts(currentCosts => currentCosts.filter(cost => cost.id !== id));
+    };
+
+
   return (
     <div className="flex flex-col h-full">
         <Header 
             title="Coûts Opérationnels"
             actions={
                 <div className="flex items-center space-x-2">
-                     <Button variant="outline">
+                     <Button variant="outline" onClick={handleAddNew}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Ajouter un Coût
                     </Button>
-                    <Button>
+                    <Button onClick={() => alert('Sauvegarde globale à implémenter')}>
                         <Save className="mr-2 h-4 w-4" />
-                        Sauvegarder
+                        Sauvegarder les modifications
                     </Button>
                 </div>
             }
@@ -67,23 +113,87 @@ export default function CostsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {costs.map((cost) => (
+                            {costs.map((cost) => {
+                                const isEditing = editingRowId === cost.id;
+                                return (
                                 <TableRow key={cost.id}>
-                                    <TableCell className="font-medium">{cost.costItem}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={cost.category === 'Fixe' ? 'secondary' : 'outline'}>{cost.category}</Badge>
+                                    <TableCell className="font-medium">
+                                        {isEditing ? (
+                                            <Input 
+                                                value={cost.costItem} 
+                                                onChange={(e) => handleUpdate(cost.id, 'costItem', e.target.value)}
+                                                className="h-8"
+                                            />
+                                        ) : (
+                                            cost.costItem
+                                        )}
                                     </TableCell>
                                     <TableCell>
-                                        <Input type="number" defaultValue={cost.monthlyCost.toFixed(2)} />
+                                        {isEditing ? (
+                                            <Select value={cost.category} onValueChange={(value) => handleUpdate(cost.id, 'category', value)}>
+                                                <SelectTrigger className="h-8">
+                                                    <SelectValue placeholder="Catégorie" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Fixe">Fixe</SelectItem>
+                                                    <SelectItem value="Variable">Variable</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        ) : (
+                                            <Badge variant={cost.category === 'Fixe' ? 'secondary' : 'outline'}>{cost.category}</Badge>
+                                        )}
                                     </TableCell>
                                     <TableCell>
-                                        <Input defaultValue={cost.notes} />
+                                        {isEditing ? (
+                                            <Input 
+                                                type="number" 
+                                                value={cost.monthlyCost} 
+                                                onChange={(e) => handleUpdate(cost.id, 'monthlyCost', parseFloat(e.target.value) || 0)}
+                                                className="h-8"
+                                            />
+                                        ) : (
+                                            cost.monthlyCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
+                                        )}
                                     </TableCell>
                                     <TableCell>
-                                        <Button variant="ghost" size="sm">Modifier</Button>
+                                        {isEditing ? (
+                                            <Input 
+                                                value={cost.notes} 
+                                                onChange={(e) => handleUpdate(cost.id, 'notes', e.target.value)}
+                                                className="h-8"
+                                            />
+                                        ) : (
+                                            cost.notes
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {isEditing ? (
+                                            <Button size="sm" onClick={() => setEditingRowId(null)}>
+                                                Sauvegarder
+                                            </Button>
+                                        ) : (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Ouvrir le menu</span>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuItem onClick={() => setEditingRowId(cost.id)}>
+                                                        Modifier
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(cost.id)}>
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Supprimer
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )})}
                         </TableBody>
                     </Table>
                 </CardContent>
