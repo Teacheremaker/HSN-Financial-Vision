@@ -303,9 +303,12 @@ export default function EntitiesPage() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const yearsWithServices = React.useMemo(() => {
-    const allYears = entities.flatMap(entity => entity.services.map(service => service.year));
-    return [...new Set(allYears)].sort((a, b) => a - b);
-  }, [entities]);
+    const years = [];
+    for (let year = 2025; year <= 2032; year++) {
+      years.push(year);
+    }
+    return years;
+  }, []);
 
   const handleExport = () => {
     const csvString = generateCsv(entities);
