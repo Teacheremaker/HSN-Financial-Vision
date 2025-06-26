@@ -87,8 +87,8 @@ export function MainChart() {
           if (isAllServicesView) {
             return true;
           }
-          // For a specific service, include its direct costs and all Global costs.
-          return cost.service === selectedService || cost.service === 'Global';
+          // For a specific service, include ONLY its direct costs.
+          return cost.service === selectedService;
       });
 
       relevantCosts.forEach(cost => {
