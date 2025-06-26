@@ -74,6 +74,7 @@ export function MainChart() {
 
   const chartData = useMemo(() => {
     const currentScenario = scenarios[activeScenario];
+    const operationalCosts = costs.filter(c => c.category !== 'À amortir');
 
     return years.map(year => {
       const dataPoint: any = { year };
@@ -83,13 +84,14 @@ export function MainChart() {
       const indexationRate = currentScenario.indexationRate / 100;
       const numYearsIndexed = year > startYear ? year - startYear : 0;
       
-      const relevantCosts = costs.filter(cost => {
-          if (isAllServicesView) return cost.service !== 'Global'; // Exclude global if viewing all
+      const relevantCosts = operationalCosts.filter(cost => {
+          if (isAllServicesView) {
+            return true;
+          }
           return cost.service === selectedService;
       });
-      const globalCosts = costs.filter(c => c.service === 'Global');
 
-      [...relevantCosts, ...globalCosts].forEach(cost => {
+      relevantCosts.forEach(cost => {
         const costInflationFactor = (cost.category === 'Fixe' || cost.category === 'Variable') ? Math.pow(1 + indexationRate, numYearsIndexed) : 1;
         
         if (cost.category === 'Amortissement') {
