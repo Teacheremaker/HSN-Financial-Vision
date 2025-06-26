@@ -38,6 +38,7 @@ export type Tariff = {
 
 export type OperationalCost = {
   id: string;
+  service: string;
   costItem: string;
   category: 'Fixe' | 'Variable';
   monthlyCost: number;
