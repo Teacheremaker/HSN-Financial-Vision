@@ -160,7 +160,7 @@ const EditableCell = ({ getValue, row, column, table }) => {
         const handleServiceSelectionChange = (newServiceNames: string[]) => {
             const newServices = newServiceNames.map(name => {
                 const existingService = currentServices.find(s => s.name === name);
-                return existingService || { name: name, year: new Date().getFullYear() };
+                return existingService || { name: name, year: 2025 };
             });
             onUpdate(newServices);
         };

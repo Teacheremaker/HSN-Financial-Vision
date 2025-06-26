@@ -46,7 +46,7 @@ const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
     }
 
     return (
-      <Popover open={open} onOpenChange={onOpenChange}>
+      <Popover modal={true} open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>
           <Button
             ref={ref}
@@ -89,10 +89,6 @@ const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
                   <CommandItem
                     key={option.value}
                     value={option.value}
-                    onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }}
                     onSelect={(currentValue) => {
                       if (selected.includes(currentValue)) {
                         onChange(selected.filter((item) => item !== currentValue));
