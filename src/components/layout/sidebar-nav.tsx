@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Coins, LayoutDashboard, Sheet, Users } from "lucide-react";
+import { Coins, LayoutDashboard, Sheet, Users, DollarSign } from "lucide-react";
 
 import {
   SidebarMenu,
@@ -14,6 +14,7 @@ import {
 const links = [
   { href: "/", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/entities", label: "Entités", icon: Users },
+  { href: "/revenues", label: "Recettes", icon: DollarSign },
   { href: "/tariffs", label: "Tarifs", icon: Sheet },
   { href: "/costs", label: "Coûts Opérationnels", icon: Coins },
 ];
