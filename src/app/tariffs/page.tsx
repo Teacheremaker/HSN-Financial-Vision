@@ -38,10 +38,6 @@ const initialTariffs: Tariff[] = [
     { id: "T-S02", service: "SPANC", category: "Abonnement annuel / habitant", unit: "habitant", price: 0.80 },
     { id: "T-R01", service: "ROUTE", category: "Contribution annuelle", unit: "km de voirie", price: 150.00 },
     { id: "T-A01", service: "ADS", category: "Instruction de dossier", unit: "dossier", price: 100.00 },
-    { id: "T-E01", service: "Gestion de l'eau", category: "Résidentiel", unit: "m³", price: 1.50 },
-    { id: "T-E02", service: "Gestion de l'eau", category: "Commercial", unit: "m³", price: 2.75 },
-    { id: "T-D01", service: "Collecte des déchets", category: "Résidentiel", unit: "mois", price: 15.00 },
-    { id: "T-D02", service: "Collecte des déchets", category: "Commercial", unit: "tonne", price: 120.00 },
 ];
 
 const services = [...new Set(initialTariffs.map(t => t.service))];

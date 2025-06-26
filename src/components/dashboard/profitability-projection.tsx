@@ -44,33 +44,33 @@ import type { Adherent } from '@/types';
 const SERVICES = [
   { id: 'geoter', name: 'GEOTER' },
   { id: 'spanc', name: 'SPANC' },
-  { id: 'eau', name: "Gestion de l'eau" },
-  { id: 'dechets', name: 'Collecte des déchets' },
+  { id: 'route', name: 'ROUTE' },
+  { id: 'ads', name: 'ADS' },
 ];
 
 const ADHERENTS: Adherent[] = [
   { id: '1', name: 'Ville A', population: 2500, status: 'Fondatrice', adhesionDate: '2024-01-15', services: ['GEOTER', 'SPANC'] },
-  { id: '2', name: 'Ville B', population: 8000, status: 'Fondatrice', adhesionDate: '2024-02-20', services: ['GEOTER', "Gestion de l'eau"] },
+  { id: '2', name: 'Ville B', population: 8000, status: 'Fondatrice', adhesionDate: '2024-02-20', services: ['GEOTER'] },
   { id: '3', name: 'Village C', population: 950, status: 'Utilisatrice', adhesionDate: '2024-03-10', services: ['SPANC'] },
-  { id: '4', name: 'Ville D', population: 12000, status: 'Utilisatrice', adhesionDate: '2024-04-05', services: ['GEOTER', 'SPANC', "Gestion de l'eau", 'Collecte des déchets'] },
+  { id: '4', name: 'Ville D', population: 12000, status: 'Utilisatrice', adhesionDate: '2024-04-05', services: ['GEOTER', 'SPANC', 'ROUTE'] },
   { id: '5', name: 'Ville E', population: 3200, status: 'Utilisatrice', adhesionDate: '2024-05-21', services: ['GEOTER'] },
-  { id: '6', name: 'Village F', population: 1500, status: 'Utilisatrice', adhesionDate: '2024-06-18', services: ['SPANC', 'Collecte des déchets'] },
-  { id: '7', name: 'Ville G', population: 25000, status: 'Utilisatrice', adhesionDate: '2024-07-01', services: ["Gestion de l'eau", 'Collecte des déchets'] },
+  { id: '6', name: 'Village F', population: 1500, status: 'Utilisatrice', adhesionDate: '2024-06-18', services: ['SPANC', 'ADS'] },
+  { id: '7', name: 'Ville G', population: 25000, status: 'Utilisatrice', adhesionDate: '2024-07-01', services: ['ROUTE', 'ADS'] },
   { id: '8', name: 'Ville H', population: 6700, status: 'Utilisatrice', adhesionDate: '2024-08-11', services: ['GEOTER', 'SPANC'] },
   { id: '9', name: 'Village I', population: 1100, status: 'Utilisatrice', adhesionDate: '2024-09-02', services: ['GEOTER'] },
-  { id: '10', name: 'Ville J', population: 4500, status: 'Utilisatrice', adhesionDate: '2024-10-15', services: ['SPANC', "Gestion de l'eau"] },
-  { id: '11', name: 'Ville K', population: 18000, status: 'Utilisatrice', adhesionDate: '2024-11-25', services: ['GEOTER', 'Collecte des déchets'] },
+  { id: '10', name: 'Ville J', population: 4500, status: 'Utilisatrice', adhesionDate: '2024-10-15', services: ['SPANC', 'ROUTE'] },
+  { id: '11', name: 'Ville K', population: 18000, status: 'Utilisatrice', adhesionDate: '2024-11-25', services: ['GEOTER', 'ADS'] },
   { id: '12', name: 'Ville L', population: 7200, status: 'Utilisatrice', adhesionDate: '2024-12-30', services: ['SPANC'] },
   { id: '13', name: 'Village M', population: 600, status: 'Utilisatrice', adhesionDate: '2025-01-19', services: ['GEOTER', 'SPANC'] },
-  { id: '14', name: 'Ville N', population: 9800, status: 'Utilisatrice', adhesionDate: '2025-02-22', services: ["Gestion de l'eau"] },
-  { id: '15', name: 'Ville O', population: 15000, status: 'Utilisatrice', adhesionDate: '2025-03-14', services: ['GEOTER', 'Collecte des déchets', "Gestion de l'eau"] },
+  { id: '14', name: 'Ville N', population: 9800, status: 'Utilisatrice', adhesionDate: '2025-02-22', services: ['ROUTE'] },
+  { id: '15', name: 'Ville O', population: 15000, status: 'Utilisatrice', adhesionDate: '2025-03-14', services: ['GEOTER', 'ADS', 'ROUTE'] },
 ].sort((a, b) => new Date(a.adhesionDate).getTime() - new Date(b.adhesionDate).getTime());
 
 const TARIFFS: { [key: string]: number } = {
   'GEOTER': 1.2,
   'SPANC': 0.8,
-  "Gestion de l'eau": 2.5,
-  'Collecte des déchets': 1.5,
+  'ROUTE': 0.5,
+  'ADS': 0.3,
 };
 
 const COSTS = {
@@ -84,8 +84,8 @@ const chartConfig = {
   resultat: { label: "Résultat d'exploitation", color: 'hsl(var(--chart-2))' },
   geoter: { label: 'Recettes GEOTER', color: 'hsl(var(--chart-1))' },
   spanc: { label: 'Recettes SPANC', color: 'hsl(var(--chart-2))' },
-  eau: { label: "Recettes Gestion de l'eau", color: 'hsl(var(--chart-3))' },
-  dechets: { label: 'Recettes Collecte des déchets', color: 'hsl(var(--chart-5))' },
+  route: { label: 'Recettes ROUTE', color: 'hsl(var(--chart-3))' },
+  ads: { label: 'Recettes ADS', color: 'hsl(var(--chart-5))' },
 };
 
 const CustomTooltip = ({ active, payload, label }: any) => {
