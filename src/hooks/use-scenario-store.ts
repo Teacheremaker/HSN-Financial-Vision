@@ -1,3 +1,4 @@
+
 'use client';
 import { create } from 'zustand';
 
@@ -45,17 +46,17 @@ type Actions = {
 
 const initialState: Scenarios = {
   optimistic: {
-    adoptionRates: { GEOTER: 75, SPANC: 75, ROUTE: 75, ADS: 75 },
+    adoptionRates: { GEOTER: 33, SPANC: 33, ROUTE: 33, ADS: 33 },
     priceIncrease: 5,
     indexationRate: 2,
   },
   conservative: {
-    adoptionRates: { GEOTER: 75, SPANC: 75, ROUTE: 75, ADS: 75 },
+    adoptionRates: { GEOTER: 20, SPANC: 20, ROUTE: 20, ADS: 20 },
     priceIncrease: 5,
     indexationRate: 2,
   },
   extension: {
-    adoptionRates: { GEOTER: 75, SPANC: 75, ROUTE: 75, ADS: 75 },
+    adoptionRates: { GEOTER: 60, SPANC: 60, ROUTE: 60, ADS: 60 },
     priceIncrease: 5,
     indexationRate: 2,
   },
