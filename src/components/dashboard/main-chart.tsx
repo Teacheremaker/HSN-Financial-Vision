@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useMemo, useState, useEffect } from "react";
@@ -25,87 +26,14 @@ import {
   ChartLegendContent
 } from "@/components/ui/chart"
 import type { ProjectionData, OperationalCost } from "@/types"
-import { useScenarioStore, initialScenarioState, SERVICES, type AdoptionRates } from "@/hooks/use-scenario-store";
+import { useScenarioStore, initialScenarioState, SERVICES, type AdoptionRates, type Scenarios } from "@/hooks/use-scenario-store";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
 import { initialCosts } from "@/data/costs";
+import { serviceProjectionData } from "@/data/projections";
 
-type ServiceProjection = {
-  year: number;
-  service: string;
-  optimistic: number;
-  conservative: number;
-  extension: number;
-};
-
-const serviceProjectionData: ServiceProjection[] = [
-    // 2024
-    { year: 2024, service: 'GEOTER', optimistic: 80, conservative: 40, extension: 60 },
-    { year: 2024, service: 'SPANC', optimistic: 50, conservative: 20, extension: 30 },
-    { year: 2024, service: 'ROUTE', optimistic: 36, conservative: 10, extension: 20 },
-    { year: 2024, service: 'ADS', optimistic: 20, conservative: 10, extension: 10 },
-    // 2025
-    { year: 2025, service: 'GEOTER', optimistic: 120, conservative: 100, extension: 110 },
-    { year: 2025, service: 'SPANC', optimistic: 85, conservative: 50, extension: 70 },
-    { year: 2025, service: 'ROUTE', optimistic: 60, conservative: 30, extension: 40 },
-    { year: 2025, service: 'ADS', optimistic: 40, conservative: 20, extension: 30 },
-    // 2026
-    { year: 2026, service: 'GEOTER', optimistic: 100, conservative: 60, extension: 80 },
-    { year: 2026, service: 'SPANC', optimistic: 70, conservative: 30, extension: 50 },
-    { year: 2026, service: 'ROUTE', optimistic: 47, conservative: 20, extension: 30 },
-    { year: 2026, service: 'ADS', optimistic: 20, conservative: 10, extension: 20 },
-    // 2027
-    { year: 2027, service: 'GEOTER', optimistic: 30, conservative: 90, extension: 50 },
-    { year: 2027, service: 'SPANC', optimistic: 20, conservative: 50, extension: 30 },
-    { year: 2027, service: 'ROUTE', optimistic: 13, conservative: 30, extension: 20 },
-    { year: 2027, service: 'ADS', optimistic: 10, conservative: 20, extension: 10 },
-    // 2028
-    { year: 2028, service: 'GEOTER', optimistic: 90, conservative: 60, extension: 70 },
-    { year: 2028, service: 'SPANC', optimistic: 60, conservative: 40, extension: 50 },
-    { year: 2028, service: 'ROUTE', optimistic: 39, conservative: 20, extension: 25 },
-    { year: 2028, service: 'ADS', optimistic: 20, conservative: 10, extension: 15 },
-    // 2029
-    { year: 2029, service: 'GEOTER', optimistic: 94, conservative: 70, extension: 80 },
-    { year: 2029, service: 'SPANC', optimistic: 60, conservative: 40, extension: 50 },
-    { year: 2029, service: 'ROUTE', optimistic: 40, conservative: 20, extension: 30 },
-    { year: 2029, service: 'ADS', optimistic: 20, conservative: 10, extension: 20 },
-    // 2030
-    { year: 2030, service: 'GEOTER', optimistic: 90, conservative: 75, extension: 85 },
-    { year: 2030, service: 'SPANC', optimistic: 65, conservative: 45, extension: 55 },
-    { year: 2030, service: 'ROUTE', optimistic: 42, conservative: 22, extension: 32 },
-    { year: 2030, service: 'ADS', optimistic: 25, conservative: 15, extension: 20 },
-    // 2031
-    { year: 2031, service: 'GEOTER', optimistic: 92, conservative: 78, extension: 88 },
-    { year: 2031, service: 'SPANC', optimistic: 68, conservative: 48, extension: 58 },
-    { year: 2031, service: 'ROUTE', optimistic: 45, conservative: 25, extension: 35 },
-    { year: 2031, service: 'ADS', optimistic: 28, conservative: 18, extension: 23 },
-    // 2032
-    { year: 2032, service: 'GEOTER', optimistic: 95, conservative: 80, extension: 90 },
-    { year: 2032, service: 'SPANC', optimistic: 70, conservative: 50, extension: 60 },
-    { year: 2032, service: 'ROUTE', optimistic: 48, conservative: 28, extension: 38 },
-    { year: 2032, service: 'ADS', optimistic: 30, conservative: 20, extension: 25 },
-    // 2033
-    { year: 2033, service: 'GEOTER', optimistic: 98, conservative: 82, extension: 92 },
-    { year: 2033, service: 'SPANC', optimistic: 72, conservative: 52, extension: 62 },
-    { year: 2033, service: 'ROUTE', optimistic: 50, conservative: 30, extension: 40 },
-    { year: 2033, service: 'ADS', optimistic: 32, conservative: 22, extension: 27 },
-];
-
-
-const chartConfig = {
+const chartConfigBase = {
   revenue: {
     label: "Revenu (en milliers d'€)",
-  },
-  optimistic: {
-    label: "Optimiste",
-    color: "hsl(var(--chart-1))",
-  },
-  conservative: {
-    label: "Conservateur",
-    color: "hsl(var(--chart-2))",
-  },
-  extension: {
-    label: "Extension",
-    color: "hsl(var(--chart-4))",
   },
   cost: {
     label: "Coûts Opérationnels",
@@ -113,7 +41,20 @@ const chartConfig = {
   },
 }
 
-const servicesForFilter = ['Tous les services', ...SERVICES, 'Coûts Mutualisés'];
+const scenarioColors: {[key in keyof Scenarios]: string} = {
+  optimistic: "hsl(var(--chart-1))",
+  conservative: "hsl(var(--chart-2))",
+  extension: "hsl(var(--chart-4))",
+}
+
+const serviceColors: {[key: string]: string} = {
+  GEOTER: "hsl(var(--chart-1))",
+  SPANC: "hsl(var(--chart-2))",
+  ROUTE: "hsl(var(--chart-3))",
+  ADS: "hsl(var(--chart-4))",
+}
+
+const servicesForFilter = ['Tous les services', ...SERVICES];
 
 export function MainChart() {
   const { scenarios, activeScenario, startYear, endYear } = useScenarioStore();
@@ -134,22 +75,36 @@ export function MainChart() {
           console.error("Failed to parse costs from localStorage", error);
       }
   }, []);
+  
+  const isAllServicesView = selectedService === 'Tous les services';
+
+  const chartConfig = useMemo(() => {
+    if (isAllServicesView) {
+        return {
+            ...chartConfigBase,
+            ...Object.fromEntries(SERVICES.map(s => [s, { label: s, color: serviceColors[s] }]))
+        }
+    }
+    return {
+      ...chartConfigBase,
+      optimistic: { label: "Optimiste", color: scenarioColors.optimistic },
+      conservative: { label: "Conservateur", color: scenarioColors.conservative },
+      extension: { label: "Extension", color: scenarioColors.extension },
+    }
+  }, [isAllServicesView]);
 
   const chartData = useMemo(() => {
-    // 1. Calculate cost projections once for all years
     const costByYear = new Map<number, number>();
     years.forEach(year => {
         let yearTotalCost = 0;
         const relevantCosts = costs.filter(cost => {
             if (selectedService === 'Tous les services') return true;
-            if (selectedService === 'Global') return cost.service === 'Global';
             return cost.service === selectedService;
         });
 
         const currentScenario = scenarios[activeScenario];
         const indexationRate = currentScenario.indexationRate / 100;
-        const baseYear = startYear;
-        const numYearsIndexed = year > baseYear ? year - baseYear : 0;
+        const numYearsIndexed = year > startYear ? year - startYear : 0;
         
         relevantCosts.forEach(cost => {
             if (cost.category === 'Fixe' || cost.category === 'Variable') {
@@ -166,57 +121,53 @@ export function MainChart() {
         costByYear.set(year, Math.round(yearTotalCost / 1000));
     });
 
-    // 2. Map years to create final data, merging revenue and cost
     return years.map(year => {
-      const baseYear = startYear;
-      const numYearsIncreased = year > baseYear ? year - baseYear : 0;
-
-      const optimisticPriceIncreaseFactor = Math.pow(1 + (scenarios.optimistic.priceIncrease / 100), numYearsIncreased);
-      const conservativePriceIncreaseFactor = Math.pow(1 + (scenarios.conservative.priceIncrease / 100), numYearsIncreased);
-      const extensionPriceIncreaseFactor = Math.pow(1 + (scenarios.extension.priceIncrease / 100), numYearsIncreased);
-      
-      let yearlyRevenue = { optimistic: 0, conservative: 0, extension: 0 };
-        
-      const servicesToProject = selectedService === "Tous les services"
-          ? SERVICES
-          : (SERVICES.includes(selectedService as any) ? [selectedService] : []);
-
-      for (const service of servicesToProject) {
-          const serviceDataForYear = serviceProjectionData.find(d => d.year === year && d.service === service);
-          if (!serviceDataForYear) continue;
-
-          const serviceKey = service as keyof AdoptionRates;
-          
-          if (!scenarios.optimistic.adoptionRates[serviceKey] || !initialScenarioState.optimistic.adoptionRates[serviceKey]) continue;
-
-          const optimisticAdoptionFactor = scenarios.optimistic.adoptionRates[serviceKey] / initialScenarioState.optimistic.adoptionRates[serviceKey];
-          const conservativeAdoptionFactor = scenarios.conservative.adoptionRates[serviceKey] / initialScenarioState.conservative.adoptionRates[serviceKey];
-          const extensionAdoptionFactor = scenarios.extension.adoptionRates[serviceKey] / initialScenarioState.extension.adoptionRates[serviceKey];
-          
-          yearlyRevenue.optimistic += serviceDataForYear.optimistic * optimisticAdoptionFactor;
-          yearlyRevenue.conservative += serviceDataForYear.conservative * conservativeAdoptionFactor;
-          yearlyRevenue.extension += serviceDataForYear.extension * extensionAdoptionFactor;
-      }
-
-      const costForYear = costByYear.get(year) || 0;
-      
-      return {
+      const dataPoint: any = {
         year: year,
-        optimistic: Math.round(yearlyRevenue.optimistic * optimisticPriceIncreaseFactor),
-        conservative: Math.round(yearlyRevenue.conservative * conservativePriceIncreaseFactor),
-        extension: Math.round(yearlyRevenue.extension * extensionPriceIncreaseFactor),
-        cost: costForYear,
+        cost: costByYear.get(year) || 0,
       };
+
+      if (isAllServicesView) {
+        // --- Aggregate revenue from all services for the active scenario ---
+        const currentScenario = scenarios[activeScenario];
+        const priceIncreaseFactor = Math.pow(1 + (currentScenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
+        
+        SERVICES.forEach(service => {
+          const serviceDataForYear = serviceProjectionData.find(d => d.year === year && d.service === service);
+          if (!serviceDataForYear) {
+            dataPoint[service] = 0;
+            return;
+          }
+          
+          const serviceKey = service as keyof AdoptionRates;
+          const initialAdoptionRate = initialScenarioState[activeScenario].adoptionRates[serviceKey];
+          const adoptionFactor = initialAdoptionRate > 0 ? currentScenario.adoptionRates[serviceKey] / initialAdoptionRate : 1;
+          const revenueForService = (serviceDataForYear[activeScenario] * 1000) * adoptionFactor * priceIncreaseFactor;
+          dataPoint[service] = Math.round(revenueForService / 1000);
+        });
+
+      } else {
+        // --- Show different scenarios for the selected service ---
+        Object.keys(scenarios).forEach(scenarioKey => {
+            const scenario = scenarios[scenarioKey as keyof Scenarios];
+            const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
+            const serviceDataForYear = serviceProjectionData.find(d => d.year === year && d.service === selectedService);
+            
+            if (serviceDataForYear) {
+                const serviceKey = selectedService as keyof AdoptionRates;
+                const initialAdoptionRate = initialScenarioState[scenarioKey as keyof Scenarios].adoptionRates[serviceKey];
+                const adoptionFactor = initialAdoptionRate > 0 ? scenario.adoptionRates[serviceKey] / initialAdoptionRate : 1;
+                const revenue = (serviceDataForYear[scenarioKey as keyof Scenarios] * 1000) * adoptionFactor * priceIncreaseFactor;
+                dataPoint[scenarioKey] = Math.round(revenue / 1000);
+            } else {
+                dataPoint[scenarioKey] = 0;
+            }
+        });
+      }
+      return dataPoint;
     }).sort((a,b) => a.year - b.year);
 
-  }, [scenarios, activeScenario, selectedService, costs, years, startYear]);
-  
-  const handleServiceChange = (value: string) => {
-    const filterKey = value === 'Coûts Mutualisés' ? 'Global' : value;
-    setSelectedService(filterKey);
-  };
-
-  const selectedValue = selectedService === 'Global' ? 'Coûts Mutualisés' : selectedService;
+  }, [scenarios, activeScenario, selectedService, costs, years, startYear, isAllServicesView]);
 
   return (
     <Card>
@@ -226,7 +177,7 @@ export function MainChart() {
           <CardDescription>Prévisions de revenus et coûts {startYear} - {endYear} (en milliers d'€)</CardDescription>
         </div>
         <div className="w-full max-w-[200px]">
-          <Select value={selectedValue} onValueChange={handleServiceChange}>
+          <Select value={selectedService} onValueChange={setSelectedService}>
             <SelectTrigger>
               <SelectValue placeholder="Filtrer par service" />
             </SelectTrigger>
@@ -259,9 +210,19 @@ export function MainChart() {
               content={<ChartTooltipContent />}
             />
             <ChartLegend content={<ChartLegendContent />} />
-            <Bar dataKey="conservative" fill="var(--color-conservative)" radius={4} />
-            <Bar dataKey="extension" fill="var(--color-extension)" radius={4} />
-            <Bar dataKey="optimistic" fill="var(--color-optimistic)" radius={4} />
+            
+            {isAllServicesView ? (
+              SERVICES.map(service => (
+                <Bar key={service} dataKey={service} fill={`var(--color-${service})`} stackId="revenue" radius={0} />
+              ))
+            ) : (
+              <>
+                <Bar dataKey="conservative" fill="var(--color-conservative)" radius={4} />
+                <Bar dataKey="extension" fill="var(--color-extension)" radius={4} />
+                <Bar dataKey="optimistic" fill="var(--color-optimistic)" radius={4} />
+              </>
+            )}
+
             <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} />
           </ComposedChart>
         </ChartContainer>

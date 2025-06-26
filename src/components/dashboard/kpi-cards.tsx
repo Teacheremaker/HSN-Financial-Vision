@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ArrowDownRight, ArrowUpRight, DollarSign, Users } from "lucide-react";
 import {
   Card,
@@ -9,12 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { KpiData } from "@/types";
-import { useScenarioStore, initialScenarioState } from "@/hooks/use-scenario-store";
+import type { KpiData, OperationalCost, Scenario } from "@/types";
+import { useScenarioStore, initialScenarioState, SERVICES, type AdoptionRates, type Scenarios } from "@/hooks/use-scenario-store";
+import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
+import { initialCosts } from "@/data/costs";
+import { serviceProjectionData } from "@/data/projections";
 
 const KpiCard = ({ kpi }: { kpi: KpiData }) => {
-  // A "good" change is an "increase" in performance.
-  // For costs, a lower value is better, so its performance "increases" when the value decreases.
   const isGoodChange = kpi.changeType === 'increase';
   const ChangeIcon = isGoodChange ? ArrowUpRight : ArrowDownRight;
   const changeColor = isGoodChange ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500';
@@ -38,64 +39,118 @@ const KpiCard = ({ kpi }: { kpi: KpiData }) => {
 
 
 export function KpiCards() {
-    const { scenarios, activeScenario } = useScenarioStore();
+    const { scenarios, activeScenario, startYear } = useScenarioStore();
+    const { selectedService } = useChartFilterStore();
+    const [costs, setCosts] = useState<OperationalCost[]>(initialCosts);
+
+    useEffect(() => {
+        try {
+            const savedCosts = localStorage.getItem('hsn-operational-costs');
+            if (savedCosts) {
+                setCosts(JSON.parse(savedCosts));
+            }
+        } catch (error) {
+            console.error("Failed to parse costs from localStorage", error);
+        }
+    }, []);
+
 
     const dynamicKpiData = useMemo(() => {
-        const currentScenario = scenarios[activeScenario];
-        const initialScenario = initialScenarioState[activeScenario];
+        const calculateAnnualValues = (scenario: Scenario, serviceFilter: string, year: number) => {
+            let revenue = 0;
+            let cost = 0;
+            let adoptionRate = 0;
+            const adoptionRates: number[] = [];
 
-        // --- Adoption Rate Calculation ---
-        const currentAdoptionRates = Object.values(currentScenario.adoptionRates);
-        const newAdoption = currentAdoptionRates.reduce((a, b) => a + b, 0) / currentAdoptionRates.length;
+            // Revenue Calculation
+            const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
+            const servicesToProject = serviceFilter === "Tous les services"
+                ? SERVICES
+                : (SERVICES.includes(serviceFilter as any) ? [serviceFilter] : []);
 
-        const initialAdoptionRates = Object.values(initialScenario.adoptionRates);
-        const baseAdoption = initialAdoptionRates.reduce((a, b) => a + b, 0) / initialAdoptionRates.length;
+            for (const service of servicesToProject) {
+                const serviceDataForYear = serviceProjectionData.find(d => d.year === year && d.service === service);
+                if (!serviceDataForYear) continue;
+
+                const serviceKey = service as keyof AdoptionRates;
+                const baseAdoptionRate = initialScenarioState[activeScenario].adoptionRates[serviceKey];
+                const currentAdoptionRate = scenario.adoptionRates[serviceKey];
+                const adoptionFactor = baseAdoptionRate > 0 ? currentAdoptionRate / baseAdoptionRate : 1;
+                
+                revenue += (serviceDataForYear[activeScenario] * 1000) * adoptionFactor;
+                adoptionRates.push(scenario.adoptionRates[serviceKey]);
+            }
+            revenue *= priceIncreaseFactor;
+            
+            // Cost Calculation
+            const indexationRate = scenario.indexationRate / 100;
+            const numYearsIndexed = year > startYear ? year - startYear : 0;
+            const relevantCosts = costs.filter(c => {
+                if (serviceFilter === 'Tous les services') return true;
+                return c.service === serviceFilter;
+            });
+
+            relevantCosts.forEach(c => {
+                if (c.category === 'Fixe' || c.category === 'Variable') {
+                    cost += c.annualCost * Math.pow(1 + indexationRate, numYearsIndexed);
+                } else if (c.category === 'Amortissement') {
+                    const start = c.amortizationStartYear ?? 0;
+                    const duration = c.amortizationDuration ?? 0;
+                    if (duration > 0 && year >= start && year < start + duration) {
+                        cost += c.annualCost;
+                    }
+                }
+            });
+
+            // Adoption Rate Calculation
+            if (serviceFilter === 'Tous les services') {
+                adoptionRate = adoptionRates.length > 0 ? adoptionRates.reduce((a, b) => a + b, 0) / adoptionRates.length : 0;
+            } else if (SERVICES.includes(serviceFilter as any)) {
+                adoptionRate = scenario.adoptionRates[serviceFilter as keyof AdoptionRates] ?? 0;
+            }
+
+            return { revenue, cost, adoptionRate };
+        }
+
+        const currentValues = calculateAnnualValues(scenarios[activeScenario], selectedService, startYear);
+        const initialValues = calculateAnnualValues(initialScenarioState[activeScenario], selectedService, startYear);
         
-        const adoptionFactor = baseAdoption > 0 ? newAdoption / baseAdoption : 1;
-        
-        // --- Other factors ---
-        const priceFactor = (1 + currentScenario.priceIncrease / 100) / (1 + initialScenario.priceIncrease / 100);
-        const indexationFactor = (1 + currentScenario.indexationRate / 100) / (1 + initialScenario.indexationRate / 100);
-
-        // --- Base values ---
-        const baseRevenue = 45231.89;
-        const baseCost = 8750.00;
-
-        // Calculate new values
-        const newRevenue = baseRevenue * adoptionFactor * priceFactor;
-        const newCost = baseCost * indexationFactor;
-        
-        const revenueChange = ((newRevenue / baseRevenue) - 1) * 100;
-        const adoptionChange = ((newAdoption / baseAdoption) - 1) * 100;
-        const costChange = ((newCost / baseCost) - 1) * 100;
+        const revenueChange = initialValues.revenue > 0 ? ((currentValues.revenue / initialValues.revenue) - 1) * 100 : 0;
+        const costChange = initialValues.cost > 0 ? ((currentValues.cost / initialValues.cost) - 1) * 100 : 0;
+        const adoptionChange = initialValues.adoptionRate > 0 ? ((currentValues.adoptionRate / initialValues.adoptionRate) - 1) * 100 : 0;
         
         const formatChange = (val: number) => `${val >= 0 ? '+' : ''}${val.toFixed(1)}%`;
+        
+        const serviceName = selectedService === 'Tous les services' ? '' : ` ${selectedService}`;
+        const adoptionTitle = selectedService === 'Tous les services' ? "Taux d'Adoption (Moy.)" : `Taux d'Adoption ${selectedService}`;
 
-        return [
+        const kpis = [
             {
-                name: "Revenu Total",
-                value: `€${newRevenue.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                name: `Revenu Total${serviceName}`,
+                value: `€${currentValues.revenue.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
                 change: formatChange(revenueChange),
-                changeType: newRevenue >= baseRevenue ? 'increase' : 'decrease',
+                changeType: currentValues.revenue >= initialValues.revenue ? 'increase' : 'decrease',
                 icon: DollarSign,
             },
             {
-                name: "Taux d'Adoption (Moy.)",
-                value: `${newAdoption.toFixed(0)}%`,
+                name: adoptionTitle,
+                value: `${currentValues.adoptionRate.toFixed(0)}%`,
                 change: formatChange(adoptionChange),
-                changeType: newAdoption >= baseAdoption ? 'increase' : 'decrease',
+                changeType: currentValues.adoptionRate >= initialValues.adoptionRate ? 'increase' : 'decrease',
                 icon: Users,
             },
             {
-                name: "Coût Opérationnel",
-                value: `€${newCost.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                name: `Coût Opérationnel${serviceName}`,
+                value: `€${currentValues.cost.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
                 change: formatChange(costChange),
-                changeType: newCost <= baseCost ? 'increase' : 'decrease',
+                changeType: currentValues.cost <= initialValues.cost ? 'increase' : 'decrease', // Lower cost is good
                 icon: ArrowDownRight,
             },
         ] as KpiData[];
 
-    }, [scenarios, activeScenario]);
+        return kpis;
+
+    }, [scenarios, activeScenario, selectedService, costs, startYear]);
 
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
