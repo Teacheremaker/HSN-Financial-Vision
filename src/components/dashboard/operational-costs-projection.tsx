@@ -34,7 +34,7 @@ const chartConfig = {
   },
 };
 
-const years = [2024, 2025, 2026, 2027, 2028, 2029];
+const years = Array.from({ length: 9 }, (_, i) => 2025 + i);
 const services = ['Tous les services', 'GEOTER', 'SPANC', 'ROUTE', 'ADS', 'Global'];
 
 export function OperationalCostsProjection() {
@@ -87,7 +87,7 @@ export function OperationalCostsProjection() {
             <CardHeader className="flex flex-row items-start justify-between gap-4">
                 <div>
                     <CardTitle>Projection des Coûts Opérationnels</CardTitle>
-                    <CardDescription>Prévisions des charges annuelles 2024 - 2029 (en milliers d'€)</CardDescription>
+                    <CardDescription>Prévisions des charges annuelles 2025 - 2033 (en milliers d'€)</CardDescription>
                 </div>
                 <div className="w-full max-w-[200px]">
                   <Select value={selectedService} onValueChange={setSelectedService}>
