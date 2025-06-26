@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -48,7 +49,7 @@ const KpiCard = ({ kpi }: { kpi: KpiData }) => {
 };
 
 export function KpiCards() {
-  const { scenarios, activeScenario, startYear, endYear } = useScenarioStore();
+  const { scenario, startYear, endYear } = useScenarioStore();
   const { selectedService } = useChartFilterStore();
   const { entities } = useEntityStore();
   const { tariffs } = useTariffStore();
@@ -82,7 +83,7 @@ export function KpiCards() {
         });
 
         const serviceKey = service as keyof AdoptionRates;
-        const initialAdoptionRate = initialScenarioState[activeScenario].adoptionRates[serviceKey];
+        const initialAdoptionRate = initialScenarioState.adoptionRates[serviceKey];
         const currentAdoptionRate = scenario.adoptionRates[serviceKey];
         adoptionRatesForAvg.push(currentAdoptionRate);
         const adoptionFactor = initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
@@ -129,12 +130,12 @@ export function KpiCards() {
     };
 
     const currentValues = calculateAnnualValues(
-      scenarios[activeScenario],
+      scenario,
       selectedService,
       endYear
     );
     const initialValues = calculateAnnualValues(
-      initialScenarioState[activeScenario],
+      initialScenarioState,
       selectedService,
       endYear
     );
@@ -204,8 +205,7 @@ export function KpiCards() {
 
     return kpis;
   }, [
-    scenarios,
-    activeScenario,
+    scenario,
     selectedService,
     costs,
     startYear,

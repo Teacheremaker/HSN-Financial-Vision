@@ -12,14 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { useScenarioStore, type Scenarios, SERVICES, initialScenarioState, type Service, type AdoptionRates, type Scenario } from "@/hooks/use-scenario-store";
+import { useScenarioStore, type AdoptionRates, SERVICES, initialScenarioState, type Scenario } from "@/hooks/use-scenario-store";
 import { Input } from "@/components/ui/input";
 import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useEntityStore } from "@/hooks/use-entity-store";
@@ -57,61 +51,15 @@ const ParameterSlider = ({
   );
 };
 
-const ScenarioTab = ({ scenarioName }: { scenarioName: keyof Scenarios }) => {
-  const { scenarios, updateScenarioValue, updateAdoptionRate } = useScenarioStore();
-  const scenario = scenarios[scenarioName];
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <Label className="text-sm font-medium">Taux d'Adoption par Service</Label>
-        <div className="space-y-4 pt-2">
-            {SERVICES.map((service) => (
-                <ParameterSlider
-                    key={service}
-                    label={service}
-                    value={scenario.adoptionRates[service]}
-                    onValueChange={(value) => updateAdoptionRate(scenarioName, service, value)}
-                />
-            ))}
-        </div>
-      </div>
-      <Separator />
-      <div>
-        <Label className="text-sm font-medium">Paramètres Généraux</Label>
-         <div className="space-y-4 pt-2">
-            <ParameterSlider
-                label="Augmentation des Tarifs"
-                value={scenario.priceIncrease}
-                onValueChange={(value) => updateScenarioValue(scenarioName, 'priceIncrease', value)}
-            />
-            <ParameterSlider
-                label="Taux d'Indexation"
-                value={scenario.indexationRate}
-                onValueChange={(value) => updateScenarioValue(scenarioName, 'indexationRate', value)}
-            />
-         </div>
-      </div>
-      <Separator />
-      <div className="flex items-center space-x-2 pt-2">
-        <Switch id={`autosave-${scenarioName.toLowerCase()}`} defaultChecked />
-        <Label htmlFor={`autosave-${scenarioName.toLowerCase()}`}>
-          Sauvegarde auto.
-        </Label>
-      </div>
-    </div>
-  );
-};
-
 const RoiCard = () => {
-    const { scenarios, activeScenario, startYear, endYear } = useScenarioStore();
+    const { scenario, startYear, endYear } = useScenarioStore();
     const { entities } = useEntityStore();
     const { tariffs } = useTariffStore();
     const { costs } = useCostStore();
 
     const roiData = useMemo(() => {
-        const currentScenario = scenarios[activeScenario];
-        const initialScenario = initialScenarioState[activeScenario];
+        const currentScenario = scenario;
+        const initialScenario = initialScenarioState;
         const operationalCosts = costs.filter((c) => c.category !== 'À amortir');
 
         const calculateValues = (scenario: Scenario, year: number) => {
@@ -133,7 +81,7 @@ const RoiCard = () => {
                 });
 
                 const serviceKey = service as keyof AdoptionRates;
-                const initialAdoptionRate = initialScenarioState[activeScenario].adoptionRates[serviceKey];
+                const initialAdoptionRate = initialScenarioState.adoptionRates[serviceKey];
                 const currentAdoptionRate = scenario.adoptionRates[serviceKey];
                 const adoptionFactor = initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
 
@@ -186,7 +134,7 @@ const RoiCard = () => {
             changeColor,
             ChangeIcon,
         };
-    }, [scenarios, activeScenario, costs, entities, tariffs, startYear, endYear]);
+    }, [scenario, costs, entities, tariffs, startYear, endYear]);
 
     return (
         <Card>
@@ -206,7 +154,7 @@ const RoiCard = () => {
 };
 
 export function ScenarioControls() {
-  const { activeScenario, setActiveScenario, startYear, setStartYear, endYear, setEndYear } = useScenarioStore();
+  const { scenario, updateScenarioValue, updateAdoptionRate, startYear, setStartYear, endYear, setEndYear } = useScenarioStore();
 
   return (
     <Card>
@@ -251,25 +199,44 @@ export function ScenarioControls() {
           </div>
         </div>
         <Separator />
-        <Tabs
-          value={activeScenario}
-          onValueChange={(value) => setActiveScenario(value as keyof Scenarios)}
-        >
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="optimistic">Optimiste</TabsTrigger>
-            <TabsTrigger value="conservative">Conservateur</TabsTrigger>
-            <TabsTrigger value="extension">Extension</TabsTrigger>
-          </TabsList>
-          <TabsContent value="optimistic" className="pt-4">
-            <ScenarioTab scenarioName="optimistic" />
-          </TabsContent>
-          <TabsContent value="conservative" className="pt-4">
-            <ScenarioTab scenarioName="conservative" />
-          </TabsContent>
-          <TabsContent value="extension" className="pt-4">
-            <ScenarioTab scenarioName="extension" />
-          </TabsContent>
-        </Tabs>
+        <div className="space-y-4 pt-4">
+            <div>
+                <Label className="text-sm font-medium">Taux d'Adoption par Service</Label>
+                <div className="space-y-4 pt-2">
+                    {SERVICES.map((service) => (
+                        <ParameterSlider
+                            key={service}
+                            label={service}
+                            value={scenario.adoptionRates[service]}
+                            onValueChange={(value) => updateAdoptionRate(service, value)}
+                        />
+                    ))}
+                </div>
+            </div>
+            <Separator />
+            <div>
+                <Label className="text-sm font-medium">Paramètres Généraux</Label>
+                <div className="space-y-4 pt-2">
+                    <ParameterSlider
+                        label="Augmentation des Tarifs"
+                        value={scenario.priceIncrease}
+                        onValueChange={(value) => updateScenarioValue('priceIncrease', value)}
+                    />
+                    <ParameterSlider
+                        label="Taux d'Indexation"
+                        value={scenario.indexationRate}
+                        onValueChange={(value) => updateScenarioValue('indexationRate', value)}
+                    />
+                </div>
+            </div>
+            <Separator />
+            <div className="flex items-center space-x-2 pt-2">
+                <Switch id="autosave-scenario" defaultChecked />
+                <Label htmlFor="autosave-scenario">
+                    Sauvegarde auto.
+                </Label>
+            </div>
+        </div>
         <Separator />
          <div className="space-y-2">
             <h3 className="text-sm font-medium">Analyse de Sensibilité</h3>

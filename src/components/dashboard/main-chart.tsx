@@ -52,7 +52,7 @@ const serviceColors: {[key: string]: string} = {
 const servicesForFilter = ['Tous les services', ...SERVICES];
 
 export function MainChart() {
-  const { scenarios, activeScenario, startYear, endYear } = useScenarioStore();
+  const { scenario, startYear, endYear } = useScenarioStore();
   const { selectedService, setSelectedService } = useChartFilterStore();
   const { entities } = useEntityStore();
   const { tariffs } = useTariffStore();
@@ -73,7 +73,7 @@ export function MainChart() {
   }, []);
 
   const chartData = useMemo(() => {
-    const currentScenario = scenarios[activeScenario];
+    const currentScenario = scenario;
     const operationalCosts = costs.filter(c => c.category !== 'À amortir');
 
     return years.map(year => {
@@ -123,7 +123,7 @@ export function MainChart() {
         });
 
         const serviceKey = service as keyof AdoptionRates;
-        const initialAdoptionRate = initialScenarioState[activeScenario].adoptionRates[serviceKey];
+        const initialAdoptionRate = initialScenarioState.adoptionRates[serviceKey];
         const currentAdoptionRate = currentScenario.adoptionRates[serviceKey];
         const adoptionFactor = initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
 
@@ -133,7 +133,7 @@ export function MainChart() {
       return dataPoint;
     }).sort((a,b) => a.year - b.year);
 
-  }, [scenarios, activeScenario, selectedService, costs, years, startYear, isAllServicesView, entities, tariffs]);
+  }, [scenario, selectedService, costs, years, startYear, isAllServicesView, entities, tariffs]);
 
   return (
     <Card>
