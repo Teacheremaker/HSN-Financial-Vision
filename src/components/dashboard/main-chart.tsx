@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useMemo } from "react";
@@ -25,29 +24,28 @@ import {
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart"
-import { useScenarioStore, initialScenarioState, SERVICES, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
+import { useScenarioStore, SERVICES, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
 import { useEntityStore } from "@/hooks/use-entity-store";
 import { useTariffStore } from "@/hooks/use-tariff-store";
 import { useCostStore } from "@/hooks/use-cost-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
 
-const chartConfigBase = {
-  revenue: {
-    label: "Revenu (en milliers d'€)",
+const chartConfig = {
+  baseRevenue: {
+    label: "Revenu de base",
+    color: "hsl(var(--chart-1))",
+  },
+  additionalRevenue: {
+    label: "Revenu d'adoption",
+    color: "hsl(var(--chart-2))",
   },
   cost: {
     label: "Coûts Opérationnels",
     color: "hsl(var(--chart-5))",
   },
-}
+};
 
-const serviceColors: {[key: string]: string} = {
-  GEOTER: "hsl(var(--chart-1))",
-  SPANC: "hsl(var(--chart-2))",
-  ROUTE: "hsl(var(--chart-3))",
-  ADS: "hsl(var(--chart-4))",
-}
 
 const servicesForFilter = ['Tous les services', ...SERVICES];
 
@@ -65,13 +63,6 @@ export function MainChart() {
 
   const isAllServicesView = selectedService === 'Tous les services';
 
-  const chartConfig = useMemo(() => {
-    return {
-      ...chartConfigBase,
-      ...Object.fromEntries(SERVICES.map(s => [s, { label: s, color: serviceColors[s] }]))
-    }
-  }, []);
-
   const chartData = useMemo(() => {
     const operationalCosts = costs.filter(c => c.category !== 'À amortir');
 
@@ -84,10 +75,7 @@ export function MainChart() {
       const numYearsIndexed = year > startYear ? year - startYear : 0;
       
       const relevantCosts = operationalCosts.filter(cost => {
-          if (isAllServicesView) {
-            return true;
-          }
-          // For a specific service, include ONLY its direct costs.
+          if (isAllServicesView) return true;
           return cost.service === selectedService;
       });
 
@@ -107,9 +95,12 @@ export function MainChart() {
       dataPoint.cost = Math.round(yearTotalCost / 1000);
 
       // --- Revenue Calculation ---
+      let yearTotalBaseRevenue = 0;
+      let yearTotalAdditionalRevenue = 0;
+      const servicesToCalculate = isAllServicesView ? SERVICES : (SERVICES.includes(selectedService as any) ? [selectedService as Service] : []);
       const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
-      
-      SERVICES.forEach(service => {
+
+      servicesToCalculate.forEach(service => {
         let baseRevenue = 0;
         let potentialRevenue = 0;
 
@@ -128,10 +119,13 @@ export function MainChart() {
         const serviceKey = service as keyof AdoptionRates;
         const adoptionRatePercent = scenario.adoptionRates[serviceKey];
         const additionalRevenue = potentialRevenue * (adoptionRatePercent / 100);
-        const totalRevenue = baseRevenue + additionalRevenue;
 
-        dataPoint[service] = Math.round((totalRevenue * priceIncreaseFactor) / 1000);
+        yearTotalBaseRevenue += baseRevenue;
+        yearTotalAdditionalRevenue += additionalRevenue;
       });
+
+      dataPoint.baseRevenue = Math.round((yearTotalBaseRevenue * priceIncreaseFactor) / 1000);
+      dataPoint.additionalRevenue = Math.round((yearTotalAdditionalRevenue * priceIncreaseFactor) / 1000);
 
       return dataPoint;
     }).sort((a,b) => a.year - b.year);
@@ -180,10 +174,8 @@ export function MainChart() {
             />
             <ChartLegend content={<ChartLegendContent />} />
             
-            {SERVICES.map(service => (
-              (isAllServicesView || selectedService === service) &&
-              <Bar key={service} dataKey={service} fill={serviceColors[service]} stackId="revenue" radius={0} />
-            ))}
+            <Bar dataKey="baseRevenue" fill="var(--color-baseRevenue)" stackId="revenue" radius={0} />
+            <Bar dataKey="additionalRevenue" fill="var(--color-additionalRevenue)" stackId="revenue" radius={[4, 4, 0, 0]} />
 
             <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} />
           </ComposedChart>

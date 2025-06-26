@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -63,7 +62,8 @@ export function KpiCards() {
       serviceFilter: string,
       year: number
     ) => {
-      let revenue = 0;
+      let totalBaseRevenue = 0;
+      let totalAdditionalRevenue = 0;
       let cost = 0;
 
       // --- Revenue ---
@@ -88,21 +88,19 @@ export function KpiCards() {
 
         const serviceKey = service as keyof AdoptionRates;
         const adoptionRatePercent = scenario.adoptionRates[serviceKey];
-        const additionalRevenue = potentialRevenue * (adoptionRatePercent / 100);
-
-        revenue += baseRevenue + additionalRevenue;
+        totalBaseRevenue += baseRevenue;
+        totalAdditionalRevenue += potentialRevenue * (adoptionRatePercent / 100);
       });
 
-      revenue *= priceIncreaseFactor;
+      const finalTotalRevenue = (totalBaseRevenue + totalAdditionalRevenue) * priceIncreaseFactor;
+      const finalAdditionalRevenue = totalAdditionalRevenue * priceIncreaseFactor;
 
       // --- Cost ---
       const indexationRate = scenario.indexationRate / 100;
       const numYearsIndexed = year > startYear ? year - startYear : 0;
       
       const relevantCosts = operationalCosts.filter((c) => {
-        if (serviceFilter === 'Tous les services') {
-            return true;
-        }
+        if (serviceFilter === 'Tous les services') return true;
         return c.service === serviceFilter;
       });
 
@@ -120,7 +118,7 @@ export function KpiCards() {
         }
       });
 
-      return { revenue, cost };
+      return { revenue: finalTotalRevenue, cost, additionalRevenue: finalAdditionalRevenue };
     };
     
     const calculateSubscriptionRate = (year: number, serviceFilter: string): number => {
@@ -143,10 +141,10 @@ export function KpiCards() {
       selectedService,
       endYear
     );
-    const initialValuesForEnd = calculateAnnualValues(
+    const initialValuesForStart = calculateAnnualValues(
       initialScenarioState,
       selectedService,
-      endYear
+      startYear
     );
 
     const currentValuesForStart = calculateAnnualValues(
@@ -154,19 +152,11 @@ export function KpiCards() {
         selectedService,
         startYear
     );
-    const initialValuesForStart = calculateAnnualValues(
-        initialScenarioState,
-        selectedService,
-        startYear
-    );
 
-    const revenueChange =
-      initialValuesForEnd.revenue > 0
-        ? (currentValuesForEnd.revenue / initialValuesForEnd.revenue - 1) * 100
-        : currentValuesForEnd.revenue > 0
-        ? 100
-        : 0;
-    const revenueChangeText = `${revenueChange >= 0 ? '+' : ''}${revenueChange.toFixed(1)}% depuis le scénario initial`;
+    const additionalRevenueText = `+${currentValuesForEnd.additionalRevenue.toLocaleString('fr-FR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      })} € (Adoption)`;
 
     const costChange =
       initialValuesForStart.cost > 0
@@ -195,9 +185,8 @@ export function KpiCards() {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })}`,
-        change: revenueChangeText,
-        changeType:
-          currentValuesForEnd.revenue >= initialValuesForEnd.revenue ? 'increase' : 'decrease',
+        change: additionalRevenueText,
+        changeType: 'increase',
         icon: DollarSign,
       },
       {
