@@ -212,7 +212,13 @@ const EditableCell = ({ getValue, row, column, table }) => {
 const generateCsv = (data: Entity[]): string => {
     const headers = ['id', 'nom', 'population', 'type', 'statut', 'services'];
     const csvRows = [headers.join(',')];
-    const quote = (field: any) => `"${String(field).replace(/"/g, '""')}"`;
+    const quote = (field: any) => {
+        const stringField = String(field);
+        if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+            return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return stringField;
+    };
 
     data.forEach(entity => {
         const servicesString = entity.services.map(s => `${s.name}:${s.year}`).join(';');
@@ -238,16 +244,20 @@ const parseCsv = (csvText: string): Entity[] => {
     const headers = headerLine.split(',').map(h => h.trim());
 
     return lines.map(line => {
-        const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+        const values = (line.match(/(".*?"|[^,]*)(,|$)/g) || [])
+            .map(v => v.endsWith(',') ? v.slice(0, -1) : v)
+            .map(v => v.trim())
+            .map(v => {
+                if (v.startsWith('"') && v.endsWith('"')) {
+                    return v.slice(1, -1).replace(/""/g, '"');
+                }
+                return v;
+            });
         
         const rowData = headers.reduce((obj, header, index) => {
-            let value = (values[index] || '').trim();
-            if (value.startsWith('"') && value.endsWith('"')) {
-                value = value.substring(1, value.length - 1).replace(/""/g, '"');
-            }
-            obj[header as keyof Entity] = value as any;
+            obj[header] = values[index] || '';
             return obj;
-        }, {} as Record<keyof Entity, any>);
+        }, {} as Record<string, any>);
 
         const services: ServiceSubscription[] = (rowData.services || '')
             .split(';')
@@ -296,8 +306,8 @@ export default function EntitiesPage() {
   };
 
   const handleExportTemplate = () => {
-    const headers = "id,nom,population,type,statut,services";
-    const example = "# Séparez les services par un point-virgule (;) et le service de l'année par un deux-points (:). Exemple : \"GEOTER:2024;SPANC:2025\"";
+    const headers = "nom,population,type,statut,services";
+    const example = "# La colonne 'id' est optionnelle et sera générée automatiquement si absente.\n# Séparez les services par un point-virgule (;) et l'année par un deux-points (:).\n# Exemple pour la colonne services : \"GEOTER:2024;SPANC:2025\"";
     const csvString = `${headers}\n${example}`;
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
