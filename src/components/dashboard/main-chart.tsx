@@ -25,8 +25,8 @@ import {
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart"
-import type { ProjectionData, OperationalCost } from "@/types"
-import { useScenarioStore, initialScenarioState, SERVICES, type AdoptionRates, type Scenarios } from "@/hooks/use-scenario-store";
+import type { OperationalCost } from "@/types"
+import { useScenarioStore, initialScenarioState, SERVICES, type AdoptionRates, type Scenarios, type Service } from "@/hooks/use-scenario-store";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
 import { initialCosts } from "@/data/costs";
 import { serviceProjectionData } from "@/data/projections";
@@ -39,12 +39,6 @@ const chartConfigBase = {
     label: "Coûts Opérationnels",
     color: "hsl(var(--chart-5))",
   },
-}
-
-const scenarioColors: {[key in keyof Scenarios]: string} = {
-  optimistic: "hsl(var(--chart-1))",
-  conservative: "hsl(var(--chart-2))",
-  extension: "hsl(var(--chart-4))",
 }
 
 const serviceColors: {[key: string]: string} = {
@@ -79,19 +73,11 @@ export function MainChart() {
   const isAllServicesView = selectedService === 'Tous les services';
 
   const chartConfig = useMemo(() => {
-    if (isAllServicesView) {
-        return {
-            ...chartConfigBase,
-            ...Object.fromEntries(SERVICES.map(s => [s, { label: s, color: serviceColors[s] }]))
-        }
-    }
     return {
       ...chartConfigBase,
-      optimistic: { label: "Optimiste", color: scenarioColors.optimistic },
-      conservative: { label: "Conservateur", color: scenarioColors.conservative },
-      extension: { label: "Extension", color: scenarioColors.extension },
+      ...Object.fromEntries(SERVICES.map(s => [s, { label: s, color: serviceColors[s] }]))
     }
-  }, [isAllServicesView]);
+  }, []);
 
   const chartData = useMemo(() => {
     const costByYear = new Map<number, number>();
@@ -127,12 +113,14 @@ export function MainChart() {
         cost: costByYear.get(year) || 0,
       };
 
-      if (isAllServicesView) {
-        // --- Aggregate revenue from all services for the active scenario ---
-        const currentScenario = scenarios[activeScenario];
-        const priceIncreaseFactor = Math.pow(1 + (currentScenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
-        
-        SERVICES.forEach(service => {
+      const currentScenario = scenarios[activeScenario];
+      const priceIncreaseFactor = Math.pow(1 + (currentScenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
+
+      // Determine which services to show based on the filter
+      const servicesToProject = isAllServicesView ? SERVICES : [selectedService as Service];
+      
+      SERVICES.forEach(service => {
+        if (servicesToProject.includes(service as Service)) {
           const serviceDataForYear = serviceProjectionData.find(d => d.year === year && d.service === service);
           if (!serviceDataForYear) {
             dataPoint[service] = 0;
@@ -144,26 +132,12 @@ export function MainChart() {
           const adoptionFactor = initialAdoptionRate > 0 ? currentScenario.adoptionRates[serviceKey] / initialAdoptionRate : 1;
           const revenueForService = (serviceDataForYear[activeScenario] * 1000) * adoptionFactor * priceIncreaseFactor;
           dataPoint[service] = Math.round(revenueForService / 1000);
-        });
+        } else {
+            // Ensure other service keys are not present or are 0 if not selected
+            dataPoint[service] = 0;
+        }
+      });
 
-      } else {
-        // --- Show different scenarios for the selected service ---
-        Object.keys(scenarios).forEach(scenarioKey => {
-            const scenario = scenarios[scenarioKey as keyof Scenarios];
-            const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
-            const serviceDataForYear = serviceProjectionData.find(d => d.year === year && d.service === selectedService);
-            
-            if (serviceDataForYear) {
-                const serviceKey = selectedService as keyof AdoptionRates;
-                const initialAdoptionRate = initialScenarioState[scenarioKey as keyof Scenarios].adoptionRates[serviceKey];
-                const adoptionFactor = initialAdoptionRate > 0 ? scenario.adoptionRates[serviceKey] / initialAdoptionRate : 1;
-                const revenue = (serviceDataForYear[scenarioKey as keyof Scenarios] * 1000) * adoptionFactor * priceIncreaseFactor;
-                dataPoint[scenarioKey] = Math.round(revenue / 1000);
-            } else {
-                dataPoint[scenarioKey] = 0;
-            }
-        });
-      }
       return dataPoint;
     }).sort((a,b) => a.year - b.year);
 
@@ -211,17 +185,9 @@ export function MainChart() {
             />
             <ChartLegend content={<ChartLegendContent />} />
             
-            {isAllServicesView ? (
-              SERVICES.map(service => (
-                <Bar key={service} dataKey={service} fill={`var(--color-${service})`} stackId="revenue" radius={0} />
-              ))
-            ) : (
-              <>
-                <Bar dataKey="conservative" fill="var(--color-conservative)" radius={4} />
-                <Bar dataKey="extension" fill="var(--color-extension)" radius={4} />
-                <Bar dataKey="optimistic" fill="var(--color-optimistic)" radius={4} />
-              </>
-            )}
+            {SERVICES.map(service => (
+              <Bar key={service} dataKey={service} fill={`var(--color-${service})`} stackId="revenue" radius={0} />
+            ))}
 
             <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} />
           </ComposedChart>
