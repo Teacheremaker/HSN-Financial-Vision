@@ -98,7 +98,7 @@ const servicesForFilter = ['Tous les services', 'GEOTER', 'SPANC', 'ROUTE', 'ADS
 const years = Array.from({ length: 6 }, (_, i) => 2024 + i);
 
 export function MainChart() {
-  const { scenarios } = useScenarioStore();
+  const { scenarios, activeScenario } = useScenarioStore();
   const { selectedService, setSelectedService } = useChartFilterStore();
   const [costs, setCosts] = useState<OperationalCost[]>(initialCosts);
 
@@ -132,7 +132,7 @@ export function MainChart() {
         return acc;
     }, {} as Record<number, Omit<ProjectionData, "cost">>);
 
-    // 2. Calculate cost projections
+    // 2. Calculate cost projections with indexation
     const costDataByYear = years.map(year => {
       let yearTotalCost = 0;
       const relevantCosts = costs.filter(cost => {
@@ -141,11 +141,19 @@ export function MainChart() {
           }
           return cost.service === selectedService;
       });
+
+      const currentScenario = scenarios[activeScenario];
+      const indexationRate = currentScenario.indexationRate / 100;
+      const baseYear = 2024;
+      const numYearsIndexed = year > baseYear ? year - baseYear : 0;
       
       relevantCosts.forEach(cost => {
           if (cost.category === 'Fixe' || cost.category === 'Variable') {
-              yearTotalCost += cost.annualCost;
+              // Apply indexation cumulatively from the base year
+              const indexedCost = cost.annualCost * Math.pow(1 + indexationRate, numYearsIndexed);
+              yearTotalCost += indexedCost;
           } else if (cost.category === 'Amortissement') {
+              // Amortization is not indexed
               const startYear = cost.amortizationStartYear ?? 0;
               const duration = cost.amortizationDuration ?? 0;
               if (duration > 0 && year >= startYear && year < startYear + duration) {
@@ -178,7 +186,7 @@ export function MainChart() {
       };
     }).sort((a,b) => a.year - b.year);
 
-  }, [scenarios, selectedService, costs]);
+  }, [scenarios, activeScenario, selectedService, costs]);
   
   const handleServiceChange = (value: string) => {
     const filterKey = value === 'Coûts Mutualisés' ? 'Global' : value;
