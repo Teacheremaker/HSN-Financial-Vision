@@ -297,6 +297,8 @@ export default function EntitiesPage() {
     pageIndex: 0,
     pageSize: 10,
   });
+  const [serviceFilter, setServiceFilter] = React.useState<string[]>([]);
+  const [yearFilter, setYearFilter] = React.useState<string>('');
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -442,6 +444,22 @@ export default function EntitiesPage() {
       header: 'Services Actifs',
       cell: EditableCell,
       enableSorting: false,
+      filterFn: (row, columnId, filterValue: { services: string[]; year: number | null }) => {
+        const rowServices = row.getValue<ServiceSubscription[]>(columnId) ?? [];
+        if (!filterValue) return true;
+
+        const { services: selectedServices, year: selectedYear } = filterValue;
+
+        const servicesMatch =
+          !selectedServices ||
+          selectedServices.length === 0 ||
+          rowServices.some((s) => selectedServices.includes(s.name));
+
+        const yearMatch =
+          !selectedYear || rowServices.some((s) => s.year === selectedYear);
+
+        return servicesMatch && yearMatch;
+      },
     },
     {
       id: 'actions',
@@ -516,6 +534,21 @@ export default function EntitiesPage() {
     },
   });
 
+  React.useEffect(() => {
+    const yearAsNumber = yearFilter ? parseInt(yearFilter, 10) : null;
+    
+    const filterValue = {
+        services: serviceFilter,
+        year: (yearAsNumber && !isNaN(yearAsNumber)) ? yearAsNumber : null,
+    };
+
+    if (filterValue.services.length > 0 || filterValue.year !== null) {
+        table.getColumn('services')?.setFilterValue(filterValue);
+    } else {
+        table.getColumn('services')?.setFilterValue(undefined); // Clear filter
+    }
+}, [serviceFilter, yearFilter, table]);
+
   return (
     <div className="flex flex-col h-full">
         <input
@@ -557,14 +590,28 @@ export default function EntitiesPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-4">
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
               <Input
-                placeholder="Filtrer par nom de collectivité..."
+                placeholder="Filtrer par collectivité..."
                 value={(table.getColumn('nom')?.getFilterValue() as string) ?? ''}
                 onChange={(event) =>
                   table.getColumn('nom')?.setFilterValue(event.target.value)
                 }
-                className="max-w-sm"
+                className="w-full sm:w-auto sm:max-w-sm"
+              />
+               <MultiSelect
+                options={SERVICE_OPTIONS}
+                selected={serviceFilter}
+                onChange={setServiceFilter}
+                className="w-full sm:w-auto sm:max-w-xs"
+                placeholder="Filtrer par service..."
+              />
+              <Input
+                type="number"
+                placeholder="Filtrer par année..."
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                className="w-full sm:w-auto sm:max-w-[180px]"
               />
             </div>
             <div className="rounded-md border">
