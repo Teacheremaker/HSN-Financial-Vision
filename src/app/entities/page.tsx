@@ -24,6 +24,7 @@ import {
   PlusCircle,
   MoreHorizontal,
   Trash2,
+  X,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -60,13 +61,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 
 const initialData: Entity[] = [
-  { id: 'ENT-001', nom: 'Ville de Metropolia', population: 50000, type: 'Fondatrice', statut: 'Actif', services: ['Eau', 'Déchets'], anneeAdhesion: 2022 },
-  { id: 'ENT-002', nom: 'Ville de Silverlake', population: 25000, type: 'Utilisatrice', statut: 'Actif', services: ['Eau'], anneeAdhesion: 2023 },
-  { id: 'ENT-003', nom: 'Village d\'Oakhaven', population: 5000, type: 'Utilisatrice', statut: 'Inactif', services: [], anneeAdhesion: 2024 },
-  { id: 'ENT-004', nom: 'Arrondissement d\'Ironwood', population: 120000, type: 'Fondatrice', statut: 'Actif', services: ['Eau', 'Déchets', 'Transport'], anneeAdhesion: 2022 },
-  { id: 'ENT-005', nom: 'Municipalité de Sunfield', population: 12000, type: 'Utilisatrice', statut: 'Actif', services: ['Déchets'], anneeAdhesion: 2024 },
+    { id: 'ENT-001', nom: 'Ville de Metropolia', population: 50000, type: 'Fondatrice', statut: 'Actif', services: ['GEOTER', 'SPANC'], anneeAdhesion: 2022 },
+    { id: 'ENT-002', nom: 'Ville de Silverlake', population: 25000, type: 'Utilisatrice', statut: 'Actif', services: ['GEOTER'], anneeAdhesion: 2023 },
+    { id: 'ENT-003', nom: 'Village d\'Oakhaven', population: 5000, type: 'Utilisatrice', statut: 'Inactif', services: [], anneeAdhesion: 2024 },
+    { id: 'ENT-004', nom: 'Arrondissement d\'Ironwood', population: 120000, type: 'Fondatrice', statut: 'Actif', services: ['GEOTER', 'SPANC', 'ROUTE'], anneeAdhesion: 2022 },
+    { id: 'ENT-005', nom: 'Municipalité de Sunfield', population: 12000, type: 'Utilisatrice', statut: 'Actif', services: ['SPANC', 'ADS'], anneeAdhesion: 2024 },
+];
+
+const SERVICE_OPTIONS: MultiSelectOption[] = [
+  { value: "GEOTER", label: "GEOTER" },
+  { value: "SPANC", label: "SPANC" },
+  { value: "ROUTE", label: "ROUTE" },
+  { value: "ADS", label: "ADS" },
 ];
 
 const EditableCell = ({ getValue, row, column, table }) => {
@@ -129,11 +138,13 @@ const EditableCell = ({ getValue, row, column, table }) => {
         )
     case 'services':
         return (
-            <Input
-                className="h-8"
-                value={(initialValue as string[]).join(', ')}
-                onChange={(e) => onUpdate(e.target.value.split(',').map(s => s.trim()))}
-                />
+            <MultiSelect
+                options={SERVICE_OPTIONS}
+                selected={initialValue || []}
+                onChange={onUpdate}
+                className="w-full"
+                placeholder="Sélectionner..."
+            />
         )
     default:
         return <Input className="h-8" value={initialValue} onChange={(e) => onUpdate(e.target.value)} type={typeof initialValue === 'number' ? 'number' : 'text'} />;
