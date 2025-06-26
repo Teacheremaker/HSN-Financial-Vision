@@ -2,8 +2,15 @@
 'use client';
 import { create } from 'zustand';
 
+export const SERVICES = ["GEOTER", "SPANC", "ROUTE", "ADS"] as const;
+export type Service = typeof SERVICES[number];
+
+export type AdoptionRates = {
+  [key in Service]: number;
+};
+
 export type Scenario = {
-  adoptionRate: number;
+  adoptionRates: AdoptionRates;
   priceIncrease: number;
   indexationRate: number;
 };
@@ -21,26 +28,31 @@ type State = {
 
 type Actions = {
   setActiveScenario: (scenario: keyof Scenarios) => void;
-  updateScenarioValue: <K extends keyof Scenario>(
+  updateScenarioValue: <K extends keyof Omit<Scenario, 'adoptionRates'>>(
     scenario: keyof Scenarios,
     param: K,
     value: Scenario[K]
+  ) => void;
+  updateAdoptionRate: (
+    scenario: keyof Scenarios,
+    service: Service,
+    value: number
   ) => void;
 };
 
 const initialState: Scenarios = {
   optimistic: {
-    adoptionRate: 75,
+    adoptionRates: { GEOTER: 75, SPANC: 75, ROUTE: 75, ADS: 75 },
     priceIncrease: 5,
     indexationRate: 2,
   },
   conservative: {
-    adoptionRate: 75,
+    adoptionRates: { GEOTER: 75, SPANC: 75, ROUTE: 75, ADS: 75 },
     priceIncrease: 5,
     indexationRate: 2,
   },
   extension: {
-    adoptionRate: 75,
+    adoptionRates: { GEOTER: 75, SPANC: 75, ROUTE: 75, ADS: 75 },
     priceIncrease: 5,
     indexationRate: 2,
   },
@@ -57,6 +69,18 @@ export const useScenarioStore = create<State & Actions>((set) => ({
       [scenario]: {
         ...state.scenarios[scenario],
         [param]: value,
+      },
+    },
+  })),
+  updateAdoptionRate: (scenario, service, value) => set((state) => ({
+    scenarios: {
+      ...state.scenarios,
+      [scenario]: {
+        ...state.scenarios[scenario],
+        adoptionRates: {
+            ...state.scenarios[scenario].adoptionRates,
+            [service]: value,
+        }
       },
     },
   })),

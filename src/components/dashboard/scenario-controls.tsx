@@ -18,7 +18,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { useScenarioStore, type Scenarios } from "@/hooks/use-scenario-store";
+import { useScenarioStore, type Scenarios, SERVICES } from "@/hooks/use-scenario-store";
 
 const ParameterSlider = ({
   label,
@@ -51,27 +51,42 @@ const ParameterSlider = ({
 };
 
 const ScenarioTab = ({ scenarioName }: { scenarioName: keyof Scenarios }) => {
-  const { scenarios, updateScenarioValue } = useScenarioStore();
+  const { scenarios, updateScenarioValue, updateAdoptionRate } = useScenarioStore();
   const scenario = scenarios[scenarioName];
 
   return (
     <div className="space-y-4">
-      <ParameterSlider
-        label="Taux d'Adoption"
-        value={scenario.adoptionRate}
-        onValueChange={(value) => updateScenarioValue(scenarioName, 'adoptionRate', value)}
-      />
-      <ParameterSlider
-        label="Augmentation des Tarifs"
-        value={scenario.priceIncrease}
-        onValueChange={(value) => updateScenarioValue(scenarioName, 'priceIncrease', value)}
-      />
-      <ParameterSlider
-        label="Taux d'Indexation"
-        value={scenario.indexationRate}
-        onValueChange={(value) => updateScenarioValue(scenarioName, 'indexationRate', value)}
-      />
-      <div className="flex items-center space-x-2">
+      <div>
+        <Label className="text-sm font-medium">Taux d'Adoption par Service</Label>
+        <div className="space-y-4 pt-2">
+            {SERVICES.map((service) => (
+                <ParameterSlider
+                    key={service}
+                    label={service}
+                    value={scenario.adoptionRates[service]}
+                    onValueChange={(value) => updateAdoptionRate(scenarioName, service, value)}
+                />
+            ))}
+        </div>
+      </div>
+      <Separator />
+      <div>
+        <Label className="text-sm font-medium">Paramètres Généraux</Label>
+         <div className="space-y-4 pt-2">
+            <ParameterSlider
+                label="Augmentation des Tarifs"
+                value={scenario.priceIncrease}
+                onValueChange={(value) => updateScenarioValue(scenarioName, 'priceIncrease', value)}
+            />
+            <ParameterSlider
+                label="Taux d'Indexation"
+                value={scenario.indexationRate}
+                onValueChange={(value) => updateScenarioValue(scenarioName, 'indexationRate', value)}
+            />
+         </div>
+      </div>
+      <Separator />
+      <div className="flex items-center space-x-2 pt-2">
         <Switch id={`autosave-${scenarioName.toLowerCase()}`} defaultChecked />
         <Label htmlFor={`autosave-${scenarioName.toLowerCase()}`}>
           Sauvegarde auto.

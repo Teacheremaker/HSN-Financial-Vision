@@ -26,7 +26,7 @@ import {
   ChartLegendContent
 } from "@/components/ui/chart"
 import type { ProjectionData, OperationalCost } from "@/types"
-import { useScenarioStore, initialScenarioState } from "@/hooks/use-scenario-store";
+import { useScenarioStore, initialScenarioState, SERVICES, type AdoptionRates } from "@/hooks/use-scenario-store";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
 import { initialCosts } from "@/data/costs";
 
@@ -114,7 +114,7 @@ const chartConfig = {
   },
 }
 
-const servicesForFilter = ['Tous les services', 'GEOTER', 'SPANC', 'ROUTE', 'ADS', 'Coûts Mutualisés'];
+const servicesForFilter = ['Tous les services', ...SERVICES, 'Coûts Mutualisés'];
 const years = Array.from({ length: 9 }, (_, i) => 2025 + i);
 
 export function MainChart() {
@@ -134,83 +134,76 @@ export function MainChart() {
   }, []);
 
   const chartData = useMemo(() => {
-    // 1. Calculate revenue projections
-    let revenueDataToProcess = serviceProjectionData;
-    if (selectedService === 'Global') {
-        revenueDataToProcess = [];
-    } else if (selectedService !== "Tous les services") {
-      revenueDataToProcess = serviceProjectionData.filter(d => d.service === selectedService);
-    }
-    
-    const aggregatedRevenueByYear = revenueDataToProcess.reduce((acc, curr) => {
-        if (!acc[curr.year]) {
-            acc[curr.year] = { year: curr.year, optimistic: 0, conservative: 0, extension: 0 };
-        }
-        acc[curr.year].optimistic += curr.optimistic;
-        acc[curr.year].conservative += curr.conservative;
-        acc[curr.year].extension += curr.extension;
-        return acc;
-    }, {} as Record<number, Omit<ProjectionData, "cost">>);
+    // 1. Calculate cost projections once for all years
+    const costByYear = new Map<number, number>();
+    years.forEach(year => {
+        let yearTotalCost = 0;
+        const relevantCosts = costs.filter(cost => {
+            if (selectedService === 'Tous les services') return true;
+            if (selectedService === 'Global') return cost.service === 'Global';
+            return cost.service === selectedService;
+        });
 
-    // 2. Calculate cost projections with indexation
-    const costDataByYear = years.map(year => {
-      let yearTotalCost = 0;
-      const relevantCosts = costs.filter(cost => {
-          if (selectedService === 'Tous les services') {
-              return true;
-          }
-          return cost.service === selectedService;
-      });
-
-      const currentScenario = scenarios[activeScenario];
-      const indexationRate = currentScenario.indexationRate / 100;
-      const baseYear = 2025;
-      const numYearsIndexed = year > baseYear ? year - baseYear : 0;
-      
-      relevantCosts.forEach(cost => {
-          if (cost.category === 'Fixe' || cost.category === 'Variable') {
-              // Apply indexation cumulatively from the base year
-              const indexedCost = cost.annualCost * Math.pow(1 + indexationRate, numYearsIndexed);
-              yearTotalCost += indexedCost;
-          } else if (cost.category === 'Amortissement') {
-              // Amortization is not indexed
-              const startYear = cost.amortizationStartYear ?? 0;
-              const duration = cost.amortizationDuration ?? 0;
-              if (duration > 0 && year >= startYear && year < startYear + duration) {
-                  yearTotalCost += cost.annualCost;
-              }
-          }
-      });
-
-      return {
-          year,
-          cost: Math.round(yearTotalCost / 1000), // in thousands of €
-      };
+        const currentScenario = scenarios[activeScenario];
+        const indexationRate = currentScenario.indexationRate / 100;
+        const baseYear = 2025;
+        const numYearsIndexed = year > baseYear ? year - baseYear : 0;
+        
+        relevantCosts.forEach(cost => {
+            if (cost.category === 'Fixe' || cost.category === 'Variable') {
+                const indexedCost = cost.annualCost * Math.pow(1 + indexationRate, numYearsIndexed);
+                yearTotalCost += indexedCost;
+            } else if (cost.category === 'Amortissement') {
+                const startYear = cost.amortizationStartYear ?? 0;
+                const duration = cost.amortizationDuration ?? 0;
+                if (duration > 0 && year >= startYear && year < startYear + duration) {
+                    yearTotalCost += cost.annualCost;
+                }
+            }
+        });
+        costByYear.set(year, Math.round(yearTotalCost / 1000));
     });
 
-    // 3. Merge data and apply scenario factors
+    // 2. Map years to create final data, merging revenue and cost
     return years.map(year => {
-      const revenueForYear = aggregatedRevenueByYear[year] || { year, optimistic: 0, conservative: 0, extension: 0 };
-      const costForYear = costDataByYear.find(c => c.year === year);
-      
       const baseYear = 2025;
       const numYearsIncreased = year > baseYear ? year - baseYear : 0;
-
-      // Factors for each scenario
-      const optimisticAdoptionFactor = scenarios.optimistic.adoptionRate / initialScenarioState.optimistic.adoptionRate;
-      const conservativeAdoptionFactor = scenarios.conservative.adoptionRate / initialScenarioState.conservative.adoptionRate;
-      const extensionAdoptionFactor = scenarios.extension.adoptionRate / initialScenarioState.extension.adoptionRate;
 
       const optimisticPriceIncreaseFactor = Math.pow(1 + (scenarios.optimistic.priceIncrease / 100), numYearsIncreased);
       const conservativePriceIncreaseFactor = Math.pow(1 + (scenarios.conservative.priceIncrease / 100), numYearsIncreased);
       const extensionPriceIncreaseFactor = Math.pow(1 + (scenarios.extension.priceIncrease / 100), numYearsIncreased);
+      
+      let yearlyRevenue = { optimistic: 0, conservative: 0, extension: 0 };
+        
+      const servicesToProject = selectedService === "Tous les services"
+          ? SERVICES
+          : (SERVICES.includes(selectedService as any) ? [selectedService] : []);
 
+      for (const service of servicesToProject) {
+          const serviceDataForYear = serviceProjectionData.find(d => d.year === year && d.service === service);
+          if (!serviceDataForYear) continue;
+
+          const serviceKey = service as keyof AdoptionRates;
+          
+          if (!scenarios.optimistic.adoptionRates[serviceKey] || !initialScenarioState.optimistic.adoptionRates[serviceKey]) continue;
+
+          const optimisticAdoptionFactor = scenarios.optimistic.adoptionRates[serviceKey] / initialScenarioState.optimistic.adoptionRates[serviceKey];
+          const conservativeAdoptionFactor = scenarios.conservative.adoptionRates[serviceKey] / initialScenarioState.conservative.adoptionRates[serviceKey];
+          const extensionAdoptionFactor = scenarios.extension.adoptionRates[serviceKey] / initialScenarioState.extension.adoptionRates[serviceKey];
+          
+          yearlyRevenue.optimistic += serviceDataForYear.optimistic * optimisticAdoptionFactor;
+          yearlyRevenue.conservative += serviceDataForYear.conservative * conservativeAdoptionFactor;
+          yearlyRevenue.extension += serviceDataForYear.extension * extensionAdoptionFactor;
+      }
+
+      const costForYear = costByYear.get(year) || 0;
+      
       return {
         year: year,
-        optimistic: Math.round(revenueForYear.optimistic * optimisticAdoptionFactor * optimisticPriceIncreaseFactor),
-        conservative: Math.round(revenueForYear.conservative * conservativeAdoptionFactor * conservativePriceIncreaseFactor),
-        extension: Math.round(revenueForYear.extension * extensionAdoptionFactor * extensionPriceIncreaseFactor),
-        cost: costForYear ? costForYear.cost : 0,
+        optimistic: Math.round(yearlyRevenue.optimistic * optimisticPriceIncreaseFactor),
+        conservative: Math.round(yearlyRevenue.conservative * conservativePriceIncreaseFactor),
+        extension: Math.round(yearlyRevenue.extension * extensionPriceIncreaseFactor),
+        cost: costForYear,
       };
     }).sort((a,b) => a.year - b.year);
 

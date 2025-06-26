@@ -13,10 +13,11 @@ import type { KpiData } from "@/types";
 import { useScenarioStore, initialScenarioState } from "@/hooks/use-scenario-store";
 
 const KpiCard = ({ kpi }: { kpi: KpiData }) => {
-  // A 'good' change is an 'increase' in performance. For costs, lower is better.
-  const isIncrease = kpi.name === "Coût Opérationnel" ? kpi.changeType === 'decrease' : kpi.changeType === 'increase';
-  const ChangeIcon = isIncrease ? ArrowUpRight : ArrowDownRight;
-  const changeColor = isIncrease ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500';
+  // A "good" change is an "increase" in performance.
+  // For costs, a lower value is better, so its performance "increases" when the value decreases.
+  const isGoodChange = kpi.changeType === 'increase';
+  const ChangeIcon = isGoodChange ? ArrowUpRight : ArrowDownRight;
+  const changeColor = isGoodChange ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500';
 
   return (
     <Card>
@@ -41,31 +42,35 @@ export function KpiCards() {
 
     const dynamicKpiData = useMemo(() => {
         const currentScenario = scenarios[activeScenario];
-        // We use optimistic as baseline, but all initial scenarios are the same
-        const initialScenario = initialScenarioState.optimistic;
+        const initialScenario = initialScenarioState[activeScenario];
 
-        // Base values from original static data
-        const baseRevenue = 45231.89;
-        const baseAdoption = 75;
-        const baseRoi = 15.3;
-        const baseCost = 8750.00;
+        // --- Adoption Rate Calculation ---
+        const currentAdoptionRates = Object.values(currentScenario.adoptionRates);
+        const newAdoption = currentAdoptionRates.reduce((a, b) => a + b, 0) / currentAdoptionRates.length;
 
-        // Calculate factors based on scenario changes.
-        // We assume a single period for these KPI cards for simplicity.
-        const adoptionFactor = currentScenario.adoptionRate / initialScenario.adoptionRate;
+        const initialAdoptionRates = Object.values(initialScenario.adoptionRates);
+        const baseAdoption = initialAdoptionRates.reduce((a, b) => a + b, 0) / initialAdoptionRates.length;
+        
+        const adoptionFactor = baseAdoption > 0 ? newAdoption / baseAdoption : 1;
+        
+        // --- Other factors ---
         const priceFactor = (1 + currentScenario.priceIncrease / 100) / (1 + initialScenario.priceIncrease / 100);
         const indexationFactor = (1 + currentScenario.indexationRate / 100) / (1 + initialScenario.indexationRate / 100);
 
+        // --- Base values ---
+        const baseRevenue = 45231.89;
+        const baseCost = 8750.00;
+
         // Calculate new values
         const newRevenue = baseRevenue * adoptionFactor * priceFactor;
-        const newAdoption = currentScenario.adoptionRate;
         const newCost = baseCost * indexationFactor;
-        const newRoi = baseRoi * (newRevenue / baseRevenue) / (newCost / baseCost);
+        const newRoi = baseCost > 0 ? (newRevenue - newCost) / newCost * 100 : 0;
+        const baseRoiValue = baseCost > 0 ? (baseRevenue - baseCost) / baseCost * 100 : 0;
 
         const revenueChange = ((newRevenue / baseRevenue) - 1) * 100;
         const adoptionChange = ((newAdoption / baseAdoption) - 1) * 100;
         const costChange = ((newCost / baseCost) - 1) * 100;
-        const roiChange = ((newRoi / baseRoi) - 1) * 100;
+        const roiChange = baseRoiValue > 0 ? ((newRoi / baseRoiValue) - 1) * 100 : (newRoi > 0 ? Infinity : 0);
         
         const formatChange = (val: number) => `${val >= 0 ? '+' : ''}${val.toFixed(1)}%`;
 
@@ -78,7 +83,7 @@ export function KpiCards() {
                 icon: DollarSign,
             },
             {
-                name: "Taux d'Adoption",
+                name: "Taux d'Adoption (Moy.)",
                 value: `${newAdoption.toFixed(0)}%`,
                 change: formatChange(adoptionChange),
                 changeType: newAdoption >= baseAdoption ? 'increase' : 'decrease',
@@ -88,7 +93,7 @@ export function KpiCards() {
                 name: "ROI Projeté",
                 value: `${newRoi.toFixed(1)}%`,
                 change: formatChange(roiChange),
-                changeType: newRoi >= baseRoi ? 'increase' : 'decrease',
+                changeType: newRoi >= baseRoiValue ? 'increase' : 'decrease',
                 icon: TrendingUp,
             },
             {
@@ -96,7 +101,7 @@ export function KpiCards() {
                 value: `€${newCost.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
                 change: formatChange(costChange),
                 changeType: newCost <= baseCost ? 'increase' : 'decrease',
-                icon: ArrowDownRight, // Original static icon
+                icon: ArrowDownRight,
             },
         ] as KpiData[];
 
