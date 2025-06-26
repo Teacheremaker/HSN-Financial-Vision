@@ -210,7 +210,7 @@ const EditableCell = ({ getValue, row, column, table }) => {
 };
 
 const generateCsv = (data: Entity[]): string => {
-    const headers = ['id', 'nom', 'population', 'type', 'statut', 'services'];
+    const headers = ['nom', 'population', 'type', 'statut', 'services'];
     const csvRows = [headers.join(',')];
     const quote = (field: any) => {
         const stringField = String(field);
@@ -223,7 +223,6 @@ const generateCsv = (data: Entity[]): string => {
     data.forEach(entity => {
         const servicesString = entity.services.map(s => `${s.name}:${s.year}`).join(';');
         const row = [
-            quote(entity.id),
             quote(entity.nom),
             quote(entity.population),
             quote(entity.type),
