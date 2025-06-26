@@ -14,14 +14,18 @@ export type ProjectionData = {
   extension: number;
 };
 
+export type ServiceSubscription = {
+  name: string;
+  year: number;
+};
+
 export type Entity = {
   id: string;
   nom: string;
   population: number;
   type: 'Fondatrice' | 'Utilisatrice';
   statut: 'Actif' | 'Inactif';
-  services: string[];
-  anneeAdhesion: number;
+  services: ServiceSubscription[];
 };
 
 export type Tariff = {

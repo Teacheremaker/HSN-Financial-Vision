@@ -6,8 +6,6 @@ import type {
   ColumnDef,
   ColumnFiltersState,
   SortingState,
-  VisibilityState,
-  Row,
 } from '@tanstack/react-table';
 import {
   flexRender,
@@ -24,7 +22,6 @@ import {
   PlusCircle,
   MoreHorizontal,
   Trash2,
-  X,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -53,7 +50,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/layout/header';
-import type { Entity } from '@/types';
+import type { Entity, ServiceSubscription } from '@/types';
 import {
   Select,
   SelectContent,
@@ -62,13 +59,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
+import { Label } from '@/components/ui/label';
 
 const initialData: Entity[] = [
-    { id: 'ENT-001', nom: 'Ville de Metropolia', population: 50000, type: 'Fondatrice', statut: 'Actif', services: ['GEOTER', 'SPANC'], anneeAdhesion: 2022 },
-    { id: 'ENT-002', nom: 'Ville de Silverlake', population: 25000, type: 'Utilisatrice', statut: 'Actif', services: ['GEOTER'], anneeAdhesion: 2023 },
-    { id: 'ENT-003', nom: 'Village d\'Oakhaven', population: 5000, type: 'Utilisatrice', statut: 'Inactif', services: [], anneeAdhesion: 2024 },
-    { id: 'ENT-004', nom: 'Arrondissement d\'Ironwood', population: 120000, type: 'Fondatrice', statut: 'Actif', services: ['GEOTER', 'SPANC', 'ROUTE'], anneeAdhesion: 2022 },
-    { id: 'ENT-005', nom: 'Municipalité de Sunfield', population: 12000, type: 'Utilisatrice', statut: 'Actif', services: ['SPANC', 'ADS'], anneeAdhesion: 2024 },
+    { id: 'ENT-001', nom: 'Ville de Metropolia', population: 50000, type: 'Fondatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2022}, {name: 'SPANC', year: 2023}]},
+    { id: 'ENT-002', nom: 'Ville de Silverlake', population: 25000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2023}] },
+    { id: 'ENT-003', nom: 'Village d\'Oakhaven', population: 5000, type: 'Utilisatrice', statut: 'Inactif', services: [] },
+    { id: 'ENT-004', nom: 'Arrondissement d\'Ironwood', population: 120000, type: 'Fondatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2022}, {name: 'SPANC', year: 2022}, {name: 'ROUTE', year: 2024}] },
+    { id: 'ENT-005', nom: 'Municipalité de Sunfield', population: 12000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'SPANC', year: 2024}, {name: 'ADS', year: 2025}] },
 ];
 
 const SERVICE_OPTIONS: MultiSelectOption[] = [
@@ -85,12 +83,15 @@ const EditableCell = ({ getValue, row, column, table }) => {
 
   if (!isEditing) {
     if (column.id === 'services') {
-      const services = getValue<string[]>();
+      const services = getValue<ServiceSubscription[]>();
+      if (!services || services.length === 0) {
+        return <span className="text-muted-foreground">Aucun</span>;
+      }
       return (
         <div className="flex flex-wrap gap-1">
           {services.map((service) => (
-            <Badge key={service} variant="secondary">
-              {service}
+            <Badge key={service.name} variant="secondary" className="font-normal">
+              {service.name} ({service.year})
             </Badge>
           ))}
         </div>
@@ -136,19 +137,59 @@ const EditableCell = ({ getValue, row, column, table }) => {
                 </SelectContent>
             </Select>
         )
-    case 'services':
+    case 'services': {
+        const currentServices = (initialValue as ServiceSubscription[]) || [];
+        const selectedServiceNames = currentServices.map(s => s.name);
+
+        const handleServiceSelectionChange = (newServiceNames: string[]) => {
+            const newServices = newServiceNames.map(name => {
+                const existingService = currentServices.find(s => s.name === name);
+                return existingService || { name: name, year: new Date().getFullYear() };
+            });
+            onUpdate(newServices);
+        };
+
+        const handleYearChange = (serviceName: string, year: string) => {
+            const newYear = parseInt(year, 10);
+            if (isNaN(newYear) || year.length > 4) return;
+
+            const newServices = currentServices.map(service => 
+                service.name === serviceName ? { ...service, year: newYear } : service
+            );
+            onUpdate(newServices);
+        };
+        
         return (
-            <MultiSelect
-                options={SERVICE_OPTIONS}
-                selected={initialValue || []}
-                onChange={onUpdate}
-                className="w-full"
-                placeholder="Sélectionner..."
-            />
-        )
+            <div className="space-y-2 min-w-[250px]">
+                <MultiSelect
+                    options={SERVICE_OPTIONS}
+                    selected={selectedServiceNames}
+                    onChange={handleServiceSelectionChange}
+                    className="w-full"
+                    placeholder="Sélectionner des services..."
+                />
+                <div className="space-y-1 max-h-24 overflow-y-auto pr-2">
+                    {currentServices.map((service) => (
+                        <div key={service.name} className="flex items-center justify-between gap-2">
+                            <Label htmlFor={`service-year-${row.id}-${service.name}`} className="text-xs font-medium text-muted-foreground">
+                                {service.name}
+                            </Label>
+                            <Input
+                                id={`service-year-${row.id}-${service.name}`}
+                                type="number"
+                                value={service.year}
+                                onChange={(e) => handleYearChange(service.name, e.target.value)}
+                                className="h-7 w-20 text-xs"
+                                placeholder="Année"
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
     default:
         return <Input className="h-8" value={initialValue} onChange={(e) => onUpdate(e.target.value)} type={typeof initialValue === 'number' ? 'number' : 'text'} />;
-
   }
 };
 
@@ -200,11 +241,7 @@ export default function EntitiesPage() {
       accessorKey: 'services',
       header: 'Services Actifs',
       cell: EditableCell,
-    },
-    {
-        accessorKey: 'anneeAdhesion',
-        header: 'Année Adhésion',
-        cell: EditableCell,
+      enableSorting: false,
     },
     {
       id: 'actions',
@@ -287,7 +324,6 @@ export default function EntitiesPage() {
             type: "Utilisatrice",
             statut: "Inactif",
             services: [],
-            anneeAdhesion: new Date().getFullYear(),
         };
         setData((old) => [...old, newRow]);
         setEditingRowId(newId);
