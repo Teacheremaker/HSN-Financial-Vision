@@ -214,8 +214,11 @@ export default function CostsPage() {
                                                             id={`start-year-${cost.id}`}
                                                             type="number"
                                                             placeholder="Début"
-                                                            value={cost.amortizationStartYear || ''}
-                                                            onChange={(e) => handleUpdate(cost.id, 'amortizationStartYear', parseInt(e.target.value))}
+                                                            value={cost.amortizationStartYear ?? ''}
+                                                            onChange={(e) => {
+                                                                const value = parseInt(e.target.value, 10);
+                                                                handleUpdate(cost.id, 'amortizationStartYear', isNaN(value) ? undefined : value);
+                                                            }}
                                                             className="h-8 w-20"
                                                         />
                                                     </div>
@@ -225,8 +228,11 @@ export default function CostsPage() {
                                                             id={`duration-${cost.id}`}
                                                             type="number"
                                                             placeholder="Durée"
-                                                            value={cost.amortizationDuration || ''}
-                                                            onChange={(e) => handleUpdate(cost.id, 'amortizationDuration', parseInt(e.target.value))}
+                                                            value={cost.amortizationDuration ?? ''}
+                                                            onChange={(e) => {
+                                                                const value = parseInt(e.target.value, 10);
+                                                                handleUpdate(cost.id, 'amortizationDuration', isNaN(value) ? undefined : value);
+                                                            }}
                                                             className="h-8 w-20"
                                                         />
                                                      </div>
