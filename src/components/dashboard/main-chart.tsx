@@ -109,23 +109,27 @@ export function MainChart() {
       const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
       
       SERVICES.forEach(service => {
-        let serviceRevenue = 0;
-        
+        let baseRevenue = 0;
+        let potentialRevenue = 0;
+
         entities.forEach(entity => {
             if (entity.statut !== 'Actif') return;
+            const price = getTariffPriceForEntity(entity, service, tariffs);
             const subscription = entity.services.find(s => s.name === service);
+
             if (subscription && year >= subscription.year) {
-                const price = getTariffPriceForEntity(entity, service, tariffs);
-                serviceRevenue += price;
+                baseRevenue += price;
+            } else {
+                potentialRevenue += price;
             }
         });
 
         const serviceKey = service as keyof AdoptionRates;
-        const initialAdoptionRate = initialScenarioState.adoptionRates[serviceKey];
-        const currentAdoptionRate = scenario.adoptionRates[serviceKey];
-        const adoptionFactor = initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
+        const adoptionRatePercent = scenario.adoptionRates[serviceKey];
+        const additionalRevenue = potentialRevenue * (adoptionRatePercent / 100);
+        const totalRevenue = baseRevenue + additionalRevenue;
 
-        dataPoint[service] = Math.round((serviceRevenue * adoptionFactor * priceIncreaseFactor) / 1000);
+        dataPoint[service] = Math.round((totalRevenue * priceIncreaseFactor) / 1000);
       });
 
       return dataPoint;

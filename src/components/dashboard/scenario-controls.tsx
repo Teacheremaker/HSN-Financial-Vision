@@ -70,22 +70,25 @@ const RoiCard = () => {
             const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
             
             SERVICES.forEach(service => {
-                let serviceRevenue = 0;
+                let baseRevenue = 0;
+                let potentialRevenue = 0;
+
                 entities.forEach(entity => {
                     if (entity.statut !== 'Actif') return;
+                    const price = getTariffPriceForEntity(entity, service, tariffs);
                     const subscription = entity.services.find(s => s.name === service);
                     if (subscription && year >= subscription.year) {
-                        const price = getTariffPriceForEntity(entity, service, tariffs);
-                        serviceRevenue += price;
+                        baseRevenue += price;
+                    } else {
+                        potentialRevenue += price;
                     }
                 });
 
                 const serviceKey = service as keyof AdoptionRates;
-                const initialAdoptionRate = initialScenarioState.adoptionRates[serviceKey];
-                const currentAdoptionRate = scenario.adoptionRates[serviceKey];
-                const adoptionFactor = initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
+                const adoptionRatePercent = scenario.adoptionRates[serviceKey];
+                const additionalRevenue = potentialRevenue * (adoptionRatePercent / 100);
 
-                revenue += serviceRevenue * adoptionFactor;
+                revenue += baseRevenue + additionalRevenue;
             });
             
             revenue *= priceIncreaseFactor;
@@ -201,7 +204,7 @@ export function ScenarioControls() {
         <Separator />
         <div className="space-y-4 pt-4">
             <div>
-                <Label className="text-sm font-medium">Taux d'Adoption par Service</Label>
+                <Label className="text-sm font-medium">Taux d'Adoption par Service (en plus des entités déjà inscrites)</Label>
                 <div className="space-y-4 pt-2">
                     {SERVICES.map((service) => (
                         <ParameterSlider
