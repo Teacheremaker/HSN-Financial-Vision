@@ -19,6 +19,13 @@ import {
   TableRow,
   TableFooter,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useScenarioStore, SERVICES, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
 import { useEntityStore } from "@/hooks/use-entity-store";
@@ -35,11 +42,22 @@ type RevenueData = {
     totalRevenue: number;
 };
 
+type ModalDetail = {
+    entityName: string;
+    entityType: string;
+    serviceName: string;
+    price: number;
+};
+
 export default function RevenuesPage() {
     const { scenario, startYear } = useScenarioStore();
     const { entities } = useEntityStore();
     const { tariffs } = useTariffStore();
     const [activeTab, setActiveTab] = useState('Cumulé');
+
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+    const [modalData, setModalData] = useState<{ year: number; service: string; details: ModalDetail[] } | null>(null);
+
 
     const revenueDataByService = useMemo(() => {
         const data: { [key: string]: RevenueData[] } = {};
@@ -96,6 +114,43 @@ export default function RevenuesPage() {
         return data;
 
     }, [scenario, entities, tariffs, startYear]);
+
+    const handleYearClick = (year: number, serviceTab: string) => {
+        const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
+    
+        const servicesToConsider = serviceTab === 'Cumulé' ? SERVICES : [serviceTab as Service];
+        
+        let details: ModalDetail[] = [];
+    
+        entities.forEach(entity => {
+            if (entity.statut !== 'Actif') return;
+            
+            servicesToConsider.forEach(service => {
+                const subscription = entity.services.find(s => s.name === service);
+                if (subscription && year >= subscription.year) {
+                    const basePrice = getTariffPriceForEntity(entity, service, tariffs);
+                    const finalPrice = basePrice * priceIncreaseFactor;
+                    details.push({
+                        entityName: entity.nom,
+                        entityType: entity.type,
+                        serviceName: service,
+                        price: finalPrice
+                    });
+                }
+            });
+        });
+    
+        details.sort((a, b) => {
+            if (a.serviceName < b.serviceName) return -1;
+            if (a.serviceName > b.serviceName) return 1;
+            if (a.entityName < b.entityName) return -1;
+            if (a.entityName > b.entityName) return 1;
+            return 0;
+        });
+    
+        setModalData({ year, service: serviceTab, details });
+        setIsDetailsModalOpen(true);
+    };
     
     const formatCurrency = (value: number) => {
         return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -109,7 +164,7 @@ export default function RevenuesPage() {
                     <CardHeader>
                         <CardTitle>Recettes par Année et par Service</CardTitle>
                         <CardDescription>
-                            Projections des recettes basées sur les entités et le scénario actuel. Les montants sont en euros HT.
+                            Projections des recettes basées sur les entités et le scénario actuel. Cliquez sur une ligne pour voir le détail des adhérents.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -145,7 +200,11 @@ export default function RevenuesPage() {
                                             </TableHeader>
                                             <TableBody>
                                                 {tableData.map((data) => (
-                                                    <TableRow key={data.year}>
+                                                    <TableRow 
+                                                        key={data.year}
+                                                        onClick={() => handleYearClick(data.year, tab)}
+                                                        className="cursor-pointer"
+                                                    >
                                                         <TableCell className="font-medium">{data.year}</TableCell>
                                                         <TableCell className="text-right">{formatCurrency(data.baseRevenue)}</TableCell>
                                                         <TableCell className="text-right">{formatCurrency(data.additionalRevenue)}</TableCell>
@@ -170,6 +229,48 @@ export default function RevenuesPage() {
                     </CardContent>
                 </Card>
             </main>
+
+            <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>Détail des recettes de base pour {modalData?.service} en {modalData?.year}</DialogTitle>
+                        <DialogDescription>
+                            Liste des entités adhérentes et le montant de leur contribution pour l'année sélectionnée.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-4 max-h-[60vh] overflow-y-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Entité</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    {modalData?.service === 'Cumulé' && <TableHead>Service</TableHead>}
+                                    <TableHead className="text-right">Contribution Annuelle (€)</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {modalData?.details && modalData.details.length > 0 ? (
+                                    modalData.details.map((detail, index) => (
+                                        <TableRow key={`${detail.entityName}-${detail.serviceName}-${index}`}>
+                                            <TableCell className="font-medium">{detail.entityName}</TableCell>
+                                            <TableCell>{detail.entityType}</TableCell>
+                                            {modalData.service === 'Cumulé' && <TableCell>{detail.serviceName}</TableCell>}
+                                            <TableCell className="text-right">{formatCurrency(detail.price)}</TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={modalData?.service === 'Cumulé' ? 4 : 3} className="h-24 text-center">
+                                            Aucune recette de base pour cette sélection.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
         </div>
     );
 }
