@@ -11,11 +11,11 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col h-full">
       <Header
-        title="Dashboard"
+        title="Tableau de bord"
         actions={
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
-            Export Data
+            Exporter les données
           </Button>
         }
       />

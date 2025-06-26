@@ -17,7 +17,7 @@ export type ProjectionData = {
 export type Entity = {
   id: string;
   name: string;
-  status: 'Active' | 'Inactive';
+  status: 'Actif' | 'Inactif';
   services: number;
   roi: string;
 };
@@ -33,7 +33,7 @@ export type Tariff = {
 export type OperationalCost = {
   id: string;
   costItem: string;
-  category: 'Fixed' | 'Variable';
+  category: 'Fixe' | 'Variable';
   monthlyCost: number;
   notes: string;
 };

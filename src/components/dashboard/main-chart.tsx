@@ -30,14 +30,14 @@ const chartData: ProjectionData[] = [
 
 const chartConfig = {
   revenue: {
-    label: "Revenue (€ thousands)",
+    label: "Revenu (en milliers d'€)",
   },
   optimistic: {
-    label: "Optimistic",
+    label: "Optimiste",
     color: "hsl(var(--chart-1))",
   },
   conservative: {
-    label: "Conservative",
+    label: "Conservateur",
     color: "hsl(var(--chart-2))",
   },
   extension: {
@@ -50,8 +50,8 @@ export function MainChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Financial Projections</CardTitle>
-        <CardDescription>2024 - 2029 Revenue Forecast</CardDescription>
+        <CardTitle>Projections Financières</CardTitle>
+        <CardDescription>Prévisions de revenus 2024 - 2029</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[300px] w-full">

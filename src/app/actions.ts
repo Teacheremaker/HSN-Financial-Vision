@@ -17,6 +17,6 @@ export async function getOptimizedParameters(
     if (error instanceof Error) {
         return { success: false, error: error.message };
     }
-    return { success: false, error: "An unexpected error occurred." };
+    return { success: false, error: "Une erreur inattendue est survenue." };
   }
 }

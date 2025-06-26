@@ -12,10 +12,10 @@ import {
 } from "@/components/ui/sidebar";
 
 const links = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/entities", label: "Entities", icon: Users },
-  { href: "/tariffs", label: "Tariffs", icon: Sheet },
-  { href: "/costs", label: "Operational Costs", icon: Coins },
+  { href: "/", label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/entities", label: "Entités", icon: Users },
+  { href: "/tariffs", label: "Tarifs", icon: Sheet },
+  { href: "/costs", label: "Coûts Opérationnels", icon: Coins },
 ];
 
 export function SidebarNav() {

@@ -13,8 +13,8 @@ import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'HSN Financial Vision',
-  description: 'Interactive financial projections and scenario planning',
+  title: 'Vision Financière HSN',
+  description: 'Projections financières interactives et planification de scénarios',
 };
 
 const HsnLogo = () => (
@@ -57,7 +57,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="fr" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -70,7 +70,7 @@ export default function RootLayout({
                     <div className="flex items-center gap-2">
                         <HsnLogo />
                         <span className="font-semibold text-lg group-data-[collapsible=icon]:hidden">
-                            HSN Vision
+                            Vision HSN
                         </span>
                     </div>
                 </SidebarHeader>

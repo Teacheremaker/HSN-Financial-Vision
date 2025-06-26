@@ -51,13 +51,13 @@ const ParameterSlider = ({
 
 const ScenarioTab = ({ title }: { title: string }) => (
   <div className="space-y-4">
-    <ParameterSlider label="Adoption Rate" defaultValue={75} />
-    <ParameterSlider label="Tariff Increase" defaultValue={5} />
-    <ParameterSlider label="Indexation Rate" defaultValue={2} />
+    <ParameterSlider label="Taux d'Adoption" defaultValue={75} />
+    <ParameterSlider label="Augmentation des Tarifs" defaultValue={5} />
+    <ParameterSlider label="Taux d'Indexation" defaultValue={2} />
     <div className="flex items-center space-x-2">
       <Switch id={`autosave-${title.toLowerCase()}`} defaultChecked />
       <Label htmlFor={`autosave-${title.toLowerCase()}`}>
-        Auto-save changes
+        Sauvegarde auto.
       </Label>
     </div>
   </div>
@@ -67,16 +67,16 @@ export function ScenarioControls() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Scenario Builder</CardTitle>
+        <CardTitle>Constructeur de Scénarios</CardTitle>
         <CardDescription>
-          Adjust parameters to model different financial futures.
+          Ajustez les paramètres pour modéliser différents avenirs financiers.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Tabs defaultValue="optimistic">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="optimistic">Optimistic</TabsTrigger>
-            <TabsTrigger value="conservative">Conservative</TabsTrigger>
+            <TabsTrigger value="optimistic">Optimiste</TabsTrigger>
+            <TabsTrigger value="conservative">Conservateur</TabsTrigger>
             <TabsTrigger value="extension">Extension</TabsTrigger>
           </TabsList>
           <TabsContent value="optimistic" className="pt-4">
@@ -91,14 +91,14 @@ export function ScenarioControls() {
         </Tabs>
         <Separator />
          <div className="space-y-4">
-            <h3 className="text-sm font-medium">Sensitivity Analysis</h3>
+            <h3 className="text-sm font-medium">Analyse de Sensibilité</h3>
              <div className="grid gap-4 sm:grid-cols-2">
                 <Card className="p-4">
-                    <p className="text-xs text-muted-foreground">±10% Tariff Change</p>
+                    <p className="text-xs text-muted-foreground">±10% Changement de Tarif</p>
                     <p className="text-lg font-bold text-green-600 dark:text-green-500">+€1.2M</p>
                 </Card>
                 <Card className="p-4">
-                    <p className="text-xs text-muted-foreground">±1 Year Adhesion Shift</p>
+                    <p className="text-xs text-muted-foreground">±1 an Décalage d'Adhésion</p>
                     <p className="text-lg font-bold text-red-600 dark:text-red-500">-€0.8M</p>
                 </Card>
              </div>

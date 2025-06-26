@@ -1,11 +1,11 @@
 'use server';
 
 /**
- * @fileOverview AI-driven parameter optimization for scenario planning.
+ * @fileOverview Agent IA pour l'optimisation des paramètres de planification de scénarios.
  *
- * - optimizeScenarioParameters - A function that suggests optimal parameters for a given KPI.
- * - OptimizeScenarioParametersInput - The input type for the optimizeScenarioParameters function.
- * - OptimizeScenarioParametersOutput - The return type for the optimizeScenarioParameters function.
+ * - optimizeScenarioParameters - Une fonction qui suggère des paramètres optimaux pour un KPI donné.
+ * - OptimizeScenarioParametersInput - Le type d'entrée pour la fonction optimizeScenarioParameters.
+ * - OptimizeScenarioParametersOutput - Le type de retour pour la fonction optimizeScenarioParameters.
  */
 
 import {ai} from '@/ai/genkit';
@@ -14,18 +14,18 @@ import {z} from 'genkit';
 const OptimizeScenarioParametersInputSchema = z.object({
   kpi: z
     .string()
-    .describe('The key performance indicator to optimize (e.g., total revenue, adoption rate).'),
+    .describe("L'indicateur de performance clé à optimiser (ex: revenu total, taux d'adoption)."),
   levers: z
     .string()
-    .describe('The levers that can be adjusted to optimize the KPI (e.g., pricing).'),
+    .describe("Les leviers qui peuvent être ajustés pour optimiser le KPI (ex: tarification)."),
   constraints: z
     .string()
     .optional()
-    .describe('Constraints or limitations on the levers that should be considered.'),
+    .describe('Contraintes ou limitations sur les leviers qui doivent être prises en compte.'),
   historicalData: z
     .string()
     .optional()
-    .describe('Historical data relevant to the KPI and levers.'),
+    .describe('Données historiques pertinentes pour le KPI et les leviers.'),
 });
 export type OptimizeScenarioParametersInput = z.infer<
   typeof OptimizeScenarioParametersInputSchema
@@ -34,10 +34,10 @@ export type OptimizeScenarioParametersInput = z.infer<
 const OptimizeScenarioParametersOutputSchema = z.object({
   suggestedParameters: z
     .string()
-    .describe('Suggested optimal parameter values for the specified levers.'),
+    .describe('Valeurs de paramètres optimales suggérées pour les leviers spécifiés.'),
   rationale: z
     .string()
-    .describe('The rationale behind the suggested parameter values.'),
+    .describe('La justification derrière les valeurs de paramètres suggérées.'),
 });
 export type OptimizeScenarioParametersOutput = z.infer<
   typeof OptimizeScenarioParametersOutputSchema
@@ -53,19 +53,20 @@ const prompt = ai.definePrompt({
   name: 'optimizeScenarioParametersPrompt',
   input: {schema: OptimizeScenarioParametersInputSchema},
   output: {schema: OptimizeScenarioParametersOutputSchema},
-  prompt: `You are an expert financial analyst. Your goal is to suggest optimal
-parameter values for various levers to maximize a specified key performance
-indicator (KPI). Consider any constraints and historical data provided.
+  prompt: `Vous êtes un analyste financier expert. Votre objectif est de suggérer des valeurs de
+paramètres optimales pour divers leviers afin de maximiser un indicateur de
+performance clé (KPI) spécifié. Prenez en compte toutes les contraintes et
+les données historiques fournies.
 
-KPI to Optimize: {{{kpi}}}
-Levers to Adjust: {{{levers}}}
-Constraints: {{{constraints}}}
-Historical Data: {{{historicalData}}}
+KPI à optimiser: {{{kpi}}}
+Leviers à ajuster: {{{levers}}}
+Contraintes: {{{constraints}}}
+Données historiques: {{{historicalData}}}
 
-Based on this information, suggest optimal parameter values for the levers and
-provide a rationale for your suggestions.
+Sur la base de ces informations, suggérez des valeurs de paramètres optimales
+pour les leviers et fournissez une justification pour vos suggestions.
 
-Output your suggested parameters and rationale in JSON format:
+Affichez vos paramètres suggérés et votre justification au format JSON:
 { "suggestedParameters": "...", "rationale": "..." }`,
 });
 

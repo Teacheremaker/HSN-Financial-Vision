@@ -21,28 +21,28 @@ import { Input } from "@/components/ui/input";
 import type { Tariff } from "@/types";
 
 const tariffs: Tariff[] = [
-    { id: "T-01", service: "Water Management", category: "Residential", unit: "m³", price: 1.50 },
-    { id: "T-02", service: "Water Management", category: "Commercial", unit: "m³", price: 2.75 },
-    { id: "T-03", service: "Waste Collection", category: "Residential", unit: "month", price: 15.00 },
-    { id: "T-04", service: "Waste Collection", category: "Commercial", unit: "ton", price: 120.00 },
-    { id: "T-05", service: "Public Transport", category: "Single Ticket", unit: "trip", price: 2.10 },
-    { id: "T-06", service: "Public Transport", category: "Monthly Pass", unit: "month", price: 55.00 },
+    { id: "T-01", service: "Gestion de l'eau", category: "Résidentiel", unit: "m³", price: 1.50 },
+    { id: "T-02", service: "Gestion de l'eau", category: "Commercial", unit: "m³", price: 2.75 },
+    { id: "T-03", service: "Collecte des déchets", category: "Résidentiel", unit: "mois", price: 15.00 },
+    { id: "T-04", service: "Collecte des déchets", category: "Commercial", unit: "tonne", price: 120.00 },
+    { id: "T-05", service: "Transport Public", category: "Billet Unique", unit: "trajet", price: 2.10 },
+    { id: "T-06", service: "Transport Public", category: "Abonnement Mensuel", unit: "mois", price: 55.00 },
 ];
 
 export default function TariffsPage() {
   return (
     <div className="flex flex-col h-full">
         <Header 
-            title="Tariff Grid"
+            title="Grille Tarifaire"
             actions={
                 <div className="flex items-center space-x-2">
                     <Button variant="outline">
                         <Share2 className="mr-2 h-4 w-4" />
-                        Share
+                        Partager
                     </Button>
                     <Button>
                         <Save className="mr-2 h-4 w-4" />
-                        Save Changes
+                        Sauvegarder
                     </Button>
                 </div>
             }
@@ -50,9 +50,9 @@ export default function TariffsPage() {
         <main className="flex-1 space-y-4 p-4 md:p-8 pt-0">
             <Card>
                 <CardHeader>
-                    <CardTitle>Service Tariffs</CardTitle>
+                    <CardTitle>Tarifs des Services</CardTitle>
                     <CardDescription>
-                        Modify tariffs by service and category. Prices are in Euros.
+                        Modifiez les tarifs par service et par catégorie. Les prix sont en euros.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -60,9 +60,9 @@ export default function TariffsPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Service</TableHead>
-                                <TableHead>Category</TableHead>
-                                <TableHead>Unit</TableHead>
-                                <TableHead className="w-[150px]">Price (€)</TableHead>
+                                <TableHead>Catégorie</TableHead>
+                                <TableHead>Unité</TableHead>
+                                <TableHead className="w-[150px]">Prix (€)</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>

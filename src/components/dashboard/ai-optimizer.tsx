@@ -31,8 +31,8 @@ import { getOptimizedParameters } from "@/app/actions";
 import type { OptimizeScenarioParametersOutput } from "@/ai/flows/optimize-scenario-parameters";
 
 const formSchema = z.object({
-  kpi: z.string().min(3, "KPI must be at least 3 characters."),
-  levers: z.string().min(3, "Levers must be at least 3 characters."),
+  kpi: z.string().min(3, "Le KPI doit contenir au moins 3 caractères."),
+  levers: z.string().min(3, "Les leviers doivent contenir au moins 3 caractères."),
   constraints: z.string().optional(),
   historicalData: z.string().optional(),
 });
@@ -45,8 +45,8 @@ export function AiOptimizer() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      kpi: "Total Revenue",
-      levers: "Pricing, adoption timeline",
+      kpi: "Revenu Total",
+      levers: "Tarification, calendrier d'adoption",
       constraints: "",
       historicalData: "",
     },
@@ -61,13 +61,13 @@ export function AiOptimizer() {
     if (response.success && response.data) {
       setResult(response.data);
       toast({
-        title: "Optimization Complete",
-        description: "AI has provided suggestions.",
+        title: "Optimisation Terminée",
+        description: "L'IA a fourni des suggestions.",
       });
     } else {
       toast({
         variant: "destructive",
-        title: "Optimization Failed",
+        title: "Échec de l'Optimisation",
         description: response.error,
       });
     }
@@ -80,10 +80,10 @@ export function AiOptimizer() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="text-primary" />
-              <span>AI-Driven Optimization</span>
+              <span>Optimisation par l'IA</span>
             </CardTitle>
             <CardDescription>
-              Let AI suggest optimal parameters to maximize your chosen KPI.
+              Laissez l'IA suggérer les paramètres optimaux pour maximiser votre KPI choisi.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -92,9 +92,9 @@ export function AiOptimizer() {
               name="kpi"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>KPI to Optimize</FormLabel>
+                  <FormLabel>KPI à Optimiser</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Total Revenue" {...field} />
+                    <Input placeholder="ex: Revenu Total" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -105,9 +105,9 @@ export function AiOptimizer() {
               name="levers"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Levers to Adjust</FormLabel>
+                  <FormLabel>Leviers à Ajuster</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Pricing, marketing spend" {...field} />
+                    <Input placeholder="ex: Tarification, dépenses marketing" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -118,9 +118,9 @@ export function AiOptimizer() {
               name="constraints"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Constraints (Optional)</FormLabel>
+                  <FormLabel>Contraintes (Optionnel)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="e.g., Budget cannot exceed €50k" {...field} />
+                    <Textarea placeholder="ex: Le budget ne peut pas dépasser 50k €" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -129,15 +129,15 @@ export function AiOptimizer() {
             {result && (
               <Card className="bg-muted/50">
                 <CardHeader>
-                    <CardTitle className="text-base">AI Suggestions</CardTitle>
+                    <CardTitle className="text-base">Suggestions de l'IA</CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm space-y-4">
                   <div>
-                    <h4 className="font-semibold">Suggested Parameters:</h4>
+                    <h4 className="font-semibold">Paramètres Suggérés :</h4>
                     <p className="text-muted-foreground">{result.suggestedParameters}</p>
                   </div>
                   <div>
-                    <h4 className="font-semibold">Rationale:</h4>
+                    <h4 className="font-semibold">Justification :</h4>
                     <p className="text-muted-foreground">{result.rationale}</p>
                   </div>
                 </CardContent>
@@ -149,12 +149,12 @@ export function AiOptimizer() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Optimizing...
+                  Optimisation...
                 </>
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Run Optimization
+                  Lancer l'Optimisation
                 </>
               )}
             </Button>
