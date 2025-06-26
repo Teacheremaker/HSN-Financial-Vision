@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -86,11 +85,40 @@ export default function CostsPage() {
     const [activeTab, setActiveTab] = useState('GEOTER');
 
     const handleUpdate = (id: string, field: keyof OperationalCost, value: any) => {
-        setCosts(currentCosts =>
-            currentCosts.map(cost =>
+        setCosts(currentCosts => {
+            const tentativelyUpdatedCosts = currentCosts.map(cost =>
                 cost.id === id ? { ...cost, [field]: value } : cost
-            )
-        );
+            );
+    
+            const changedCost = tentativelyUpdatedCosts.find(c => c.id === id);
+            if (!changedCost) return tentativelyUpdatedCosts;
+    
+            const investmentCost = tentativelyUpdatedCosts.find(c => c.service === changedCost.service && c.category === 'À amortir');
+            const amortizationLine = tentativelyUpdatedCosts.find(c => c.service === changedCost.service && c.category === 'Amortissement');
+    
+            if (investmentCost && amortizationLine) {
+                const isInvestmentAmountChanged = changedCost.id === investmentCost.id && field === 'annualCost';
+                const isAmortizationDurationChanged = changedCost.id === amortizationLine.id && field === 'amortizationDuration';
+    
+                if (isInvestmentAmountChanged || isAmortizationDurationChanged) {
+                    const amountToAmortize = investmentCost.annualCost;
+                    const duration = amortizationLine.amortizationDuration;
+    
+                    if (amountToAmortize > 0 && duration && duration > 0) {
+                        const calculatedAmortization = amountToAmortize / duration;
+    
+                        return tentativelyUpdatedCosts.map(cost => {
+                            if (cost.id === amortizationLine.id) {
+                                return { ...cost, annualCost: calculatedAmortization };
+                            }
+                            return cost;
+                        });
+                    }
+                }
+            }
+    
+            return tentativelyUpdatedCosts;
+        });
     };
 
     const handleAddNew = () => {
@@ -205,13 +233,15 @@ export default function CostsPage() {
                                                     value={cost.annualCost} 
                                                     onChange={(e) => handleUpdate(cost.id, 'annualCost', parseFloat(e.target.value) || 0)}
                                                     className="h-8 text-right"
+                                                    disabled={cost.category === 'Amortissement'}
+                                                    title={cost.category === 'Amortissement' ? "Ce champ est calculé automatiquement" : ""}
                                                 />
                                             ) : (
                                                 cost.annualCost.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            {isEditing && (cost.category === 'Amortissement' || cost.category === 'À amortir') ? (
+                                            {isEditing && cost.category === 'Amortissement' ? (
                                                 <div className="flex items-center gap-2">
                                                     <div>
                                                         <Label htmlFor={`start-year-${cost.id}`} className="sr-only">Année de début</Label>
