@@ -40,9 +40,11 @@ export type OperationalCost = {
   id: string;
   service: string;
   costItem: string;
-  category: 'Fixe' | 'Variable';
-  monthlyCost: number;
+  category: 'Fixe' | 'Variable' | 'Amortissement';
+  annualCost: number;
   notes: string;
+  amortizationStartYear?: number;
+  amortizationDuration?: number;
 };
 
 export type Adherent = {

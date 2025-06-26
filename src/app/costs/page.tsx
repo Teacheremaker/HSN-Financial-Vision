@@ -16,6 +16,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -38,37 +39,53 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { OperationalCost } from "@/types";
+import { Label } from '@/components/ui/label';
 
-const services = ["Global", "GEOTER", "SPANC", "ROUTE", "ADS"];
+const services = ["GEOTER", "SPANC", "ROUTE", "ADS", "Global"];
 
 const initialCosts: OperationalCost[] = [
-    // Coûts globaux (mutualisés)
-    { id: "C-01", service: "Global", costItem: "Salaires Direction & Admin", category: "Fixe", monthlyCost: 80000, notes: "Personnel non affecté à un service" },
-    { id: "C-02", service: "Global", costItem: "Loyer des bureaux", category: "Fixe", monthlyCost: 25000, notes: "Siège social" },
-    { id: "C-03", service: "Global", costItem: "Licences logicielles partagées", category: "Fixe", monthlyCost: 3000, notes: "CRM, ERP, etc." },
-    { id: "C-04", service: "Global", costItem: "Services Publics (siège)", category: "Variable", monthlyCost: 2200, notes: "Électricité et eau du siège" },
-    
-    // Coûts par service
-    { id: "C-11", service: "GEOTER", costItem: "Salaires équipe GEOTER", category: "Fixe", monthlyCost: 45000, notes: "" },
-    { id: "C-12", service: "GEOTER", costItem: "Hébergement serveurs carto", category: "Fixe", monthlyCost: 5000, notes: "Serveurs de cartographie" },
-    
-    { id: "C-21", service: "SPANC", costItem: "Salaires équipe SPANC", category: "Fixe", monthlyCost: 35000, notes: "" },
-    { id: "C-22", service: "SPANC", costItem: "Carburant véhicules inspection", category: "Variable", monthlyCost: 4000, notes: "" },
-    
-    { id: "C-31", service: "ROUTE", costItem: "Salaires équipe ROUTE", category: "Fixe", monthlyCost: 60000, notes: "" },
-    { id: "C-32", service: "ROUTE", costItem: "Matériaux (asphalte, etc.)", category: "Variable", monthlyCost: 20000, notes: "" },
-    
-    { id: "C-41", service: "ADS", costItem: "Salaires équipe ADS", category: "Fixe", monthlyCost: 25000, notes: "" },
-    { id: "C-42", service: "ADS", costItem: "Frais de publication légale", category: "Variable", monthlyCost: 1500, notes: "" },
+    // --- GEOTER ---
+    { id: "C-G01", service: "GEOTER", costItem: "Coût de développement SIG (HT)", category: "Fixe", annualCost: 69500, notes: "" },
+    { id: "C-G02", service: "GEOTER", costItem: "Coût maintenance annuelle SIG (TTC)", category: "Fixe", annualCost: 13471, notes: "" },
+    { id: "C-G03", service: "GEOTER", costItem: "Coût maintenance outils HSN (TTC)", category: "Fixe", annualCost: 2562.5, notes: "LIZMAP, FME, GTF" },
+    { id: "C-G04", service: "GEOTER", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 64000, notes: "" },
+    { id: "C-G05", service: "GEOTER", costItem: "Amortissement", category: "Amortissement", annualCost: 8687.50, notes: "Sur coût de dév.", amortizationStartYear: 2025, amortizationDuration: 8 },
+
+    // --- SPANC ---
+    { id: "C-S01", service: "SPANC", costItem: "Coût développement Applicatif", category: "Fixe", annualCost: 15700, notes: "" },
+    { id: "C-S02", service: "SPANC", costItem: "Coût maintenance annuelle applicatif", category: "Fixe", annualCost: 5280, notes: "" },
+    { id: "C-S03", service: "SPANC", costItem: "Coût maintenance outils HSN (LIZMAP, FME, GTF)", category: "Fixe", annualCost: 512.50, notes: "" },
+    { id: "C-S04", service: "SPANC", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 6400, notes: "" },
+    { id: "C-S05", service: "SPANC", costItem: "Amortissement", category: "Amortissement", annualCost: 1962.50, notes: "Sur coût de dév.", amortizationStartYear: 2025, amortizationDuration: 8 },
+
+    // --- ROUTE ---
+    { id: "C-R01", service: "ROUTE", costItem: "Coût de développement (HT)", category: "Fixe", annualCost: 60598, notes: "" },
+    { id: "C-R02", service: "ROUTE", costItem: "Coût maintenance annuelle (TTC)", category: "Fixe", annualCost: 5280, notes: "" },
+    { id: "C-R03", service: "ROUTE", costItem: "Coût maintenance outils HSN (TTC)", category: "Fixe", annualCost: 512.50, notes: "LIZMAP, FME, GTF" },
+    { id: "C-R04", service: "ROUTE", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 6400, notes: "" },
+    { id: "C-R05", service: "ROUTE", costItem: "Amortissement", category: "Amortissement", annualCost: 7574.75, notes: "Sur coût de dév.", amortizationStartYear: 2025, amortizationDuration: 8 },
+
+    // --- ADS ---
+    { id: "C-A01", service: "ADS", costItem: "Coût de développement (HT)", category: "Fixe", annualCost: 6168, notes: "" },
+    { id: "C-A02", service: "ADS", costItem: "Coût maintenance annuelle (TTC)", category: "Fixe", annualCost: 1000, notes: "" },
+    { id: "C-A03", service: "ADS", costItem: "Coût maintenance outils HSN (TTC)", category: "Fixe", annualCost: 512.50, notes: "LIZMAP, FME, GTF" },
+    { id: "C-A04", service: "ADS", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 6400, notes: "" },
+    { id: "C-A05", service: "ADS", costItem: "Amortissement", category: "Amortissement", annualCost: 771, notes: "Sur coût de dév.", amortizationStartYear: 2025, amortizationDuration: 8 },
+
+    // --- Global ---
+    { id: "C-Gl01", service: "Global", costItem: "Salaires Direction & Admin", category: "Fixe", annualCost: 80000 * 12, notes: "Personnel non affecté à un service" },
+    { id: "C-Gl02", service: "Global", costItem: "Loyer des bureaux", category: "Fixe", annualCost: 25000 * 12, notes: "Siège social" },
+    { id: "C-Gl03", service: "Global", costItem: "Licences logicielles partagées", category: "Fixe", annualCost: 3000 * 12, notes: "CRM, ERP, etc." },
+    { id: "C-Gl04", service: "Global", costItem: "Services Publics (siège)", category: "Variable", annualCost: 2200 * 12, notes: "Électricité et eau du siège" },
 ];
 
 
 export default function CostsPage() {
     const [costs, setCosts] = useState(initialCosts);
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState('Global');
+    const [activeTab, setActiveTab] = useState('GEOTER');
 
-    const handleUpdate = (id: string, field: keyof OperationalCost, value: string | number) => {
+    const handleUpdate = (id: string, field: keyof OperationalCost, value: any) => {
         setCosts(currentCosts =>
             currentCosts.map(cost =>
                 cost.id === id ? { ...cost, [field]: value } : cost
@@ -83,7 +100,7 @@ export default function CostsPage() {
             service: activeTab,
             costItem: "Nouveau coût",
             category: "Variable",
-            monthlyCost: 0,
+            annualCost: 0,
             notes: "",
         };
         setCosts(currentCosts => [...currentCosts, newCost]);
@@ -95,6 +112,7 @@ export default function CostsPage() {
     };
     
     const filteredCosts = costs.filter(cost => cost.service === activeTab);
+    const totalAnnualCost = filteredCosts.reduce((sum, cost) => sum + cost.annualCost, 0);
 
   return (
     <div className="flex flex-col h-full">
@@ -135,9 +153,10 @@ export default function CostsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Élément de Coût</TableHead>
+                                    <TableHead className="w-[30%]">Élément de Coût</TableHead>
                                     <TableHead>Catégorie</TableHead>
-                                    <TableHead>Coût Mensuel (€)</TableHead>
+                                    <TableHead>Coût Annuel (€)</TableHead>
+                                    <TableHead>Amortissement</TableHead>
                                     <TableHead>Notes</TableHead>
                                     <TableHead><span className="sr-only">Actions</span></TableHead>
                                 </TableRow>
@@ -167,22 +186,55 @@ export default function CostsPage() {
                                                     <SelectContent>
                                                         <SelectItem value="Fixe">Fixe</SelectItem>
                                                         <SelectItem value="Variable">Variable</SelectItem>
+                                                        <SelectItem value="Amortissement">Amortissement</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             ) : (
-                                                <Badge variant={cost.category === 'Fixe' ? 'secondary' : 'outline'}>{cost.category}</Badge>
+                                                <Badge variant={cost.category === 'Fixe' ? 'secondary' : (cost.category === 'Amortissement' ? 'default' : 'outline')}>{cost.category}</Badge>
                                             )}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell className="text-right">
                                             {isEditing ? (
                                                 <Input 
                                                     type="number" 
-                                                    value={cost.monthlyCost} 
-                                                    onChange={(e) => handleUpdate(cost.id, 'monthlyCost', parseFloat(e.target.value) || 0)}
-                                                    className="h-8"
+                                                    value={cost.annualCost} 
+                                                    onChange={(e) => handleUpdate(cost.id, 'annualCost', parseFloat(e.target.value) || 0)}
+                                                    className="h-8 text-right"
                                                 />
                                             ) : (
-                                                cost.monthlyCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
+                                                cost.annualCost.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            {isEditing && cost.category === 'Amortissement' ? (
+                                                <div className="flex items-center gap-2">
+                                                    <div>
+                                                        <Label htmlFor={`start-year-${cost.id}`} className="sr-only">Début</Label>
+                                                        <Input 
+                                                            id={`start-year-${cost.id}`}
+                                                            type="number"
+                                                            placeholder="Début"
+                                                            value={cost.amortizationStartYear || ''}
+                                                            onChange={(e) => handleUpdate(cost.id, 'amortizationStartYear', parseInt(e.target.value))}
+                                                            className="h-8 w-20"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label htmlFor={`duration-${cost.id}`} className="sr-only">Durée</Label>
+                                                        <Input
+                                                            id={`duration-${cost.id}`}
+                                                            type="number"
+                                                            placeholder="Durée"
+                                                            value={cost.amortizationDuration || ''}
+                                                            onChange={(e) => handleUpdate(cost.id, 'amortizationDuration', parseInt(e.target.value))}
+                                                            className="h-8 w-20"
+                                                        />
+                                                     </div>
+                                                </div>
+                                            ) : cost.amortizationStartYear ? (
+                                                `${cost.amortizationStartYear} (${cost.amortizationDuration} ans)`
+                                            ) : (
+                                                <span className="text-muted-foreground">-</span>
                                             )}
                                         </TableCell>
                                         <TableCell>
@@ -225,12 +277,19 @@ export default function CostsPage() {
                                     </TableRow>
                                 )}) : (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center">
+                                        <TableCell colSpan={6} className="h-24 text-center">
                                             Aucun coût défini pour ce service.
                                         </TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
+                            <TableFooter>
+                                <TableRow className="bg-muted/50 font-medium">
+                                    <TableCell colSpan={2}>Total Charges {activeTab !== 'Global' ? activeTab : 'Mutualisées'}</TableCell>
+                                    <TableCell className="text-right">{totalAnnualCost.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                    <TableCell colSpan={3}></TableCell>
+                                </TableRow>
+                            </TableFooter>
                         </Table>
                     </div>
                 </CardContent>
