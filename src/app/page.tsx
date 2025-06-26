@@ -7,7 +7,6 @@ import { ScenarioControls } from "@/components/dashboard/scenario-controls";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { ProfitabilityProjection } from "@/components/dashboard/profitability-projection";
-import { OperationalCostsProjection } from "@/components/dashboard/operational-costs-projection";
 
 export default function DashboardPage() {
   return (
@@ -26,7 +25,6 @@ export default function DashboardPage() {
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-7">
           <div className="xl:col-span-4 space-y-4">
             <MainChart />
-            <OperationalCostsProjection />
           </div>
           <div className="xl:col-span-3">
              <ScenarioControls />

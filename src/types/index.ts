@@ -12,6 +12,7 @@ export type ProjectionData = {
   optimistic: number;
   conservative: number;
   extension: number;
+  cost?: number;
 };
 
 export type ServiceSubscription = {

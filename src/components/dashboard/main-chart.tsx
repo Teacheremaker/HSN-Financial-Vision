@@ -1,8 +1,8 @@
 
 "use client"
 
-import { useMemo } from "react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { useMemo, useState, useEffect } from "react";
+import { ComposedChart, Bar, Line, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
   Card,
@@ -25,9 +25,10 @@ import {
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart"
-import type { ProjectionData } from "@/types"
+import type { ProjectionData, OperationalCost } from "@/types"
 import { useScenarioStore, initialScenarioState } from "@/hooks/use-scenario-store";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
+import { initialCosts } from "@/data/costs";
 
 type ServiceProjection = {
   year: number;
@@ -87,21 +88,41 @@ const chartConfig = {
     label: "Extension",
     color: "hsl(var(--chart-4))",
   },
+  cost: {
+    label: "Coûts Opérationnels",
+    color: "hsl(var(--chart-5))",
+  },
 }
+
+const servicesForFilter = ['Tous les services', 'GEOTER', 'SPANC', 'ROUTE', 'ADS', 'Coûts Mutualisés'];
+const years = Array.from({ length: 6 }, (_, i) => 2024 + i);
 
 export function MainChart() {
   const { scenarios } = useScenarioStore();
-  const { selectedService, setSelectedService, getServices } = useChartFilterStore();
+  const { selectedService, setSelectedService } = useChartFilterStore();
+  const [costs, setCosts] = useState<OperationalCost[]>(initialCosts);
+
+  useEffect(() => {
+      try {
+          const savedCosts = localStorage.getItem('hsn-operational-costs');
+          if (savedCosts) {
+              setCosts(JSON.parse(savedCosts));
+          }
+      } catch (error) {
+          console.error("Failed to parse costs from localStorage", error);
+      }
+  }, []);
 
   const chartData = useMemo(() => {
-    let dataToProcess = serviceProjectionData;
-
-    if (selectedService !== "Tous les services") {
-      dataToProcess = serviceProjectionData.filter(d => d.service === selectedService);
+    // 1. Calculate revenue projections
+    let revenueDataToProcess = serviceProjectionData;
+    if (selectedService === 'Global') {
+        revenueDataToProcess = [];
+    } else if (selectedService !== "Tous les services") {
+      revenueDataToProcess = serviceProjectionData.filter(d => d.service === selectedService);
     }
     
-    // Aggregate data by year
-    const aggregatedByYear = dataToProcess.reduce((acc, curr) => {
+    const aggregatedRevenueByYear = revenueDataToProcess.reduce((acc, curr) => {
         if (!acc[curr.year]) {
             acc[curr.year] = { year: curr.year, optimistic: 0, conservative: 0, extension: 0 };
         }
@@ -109,40 +130,77 @@ export function MainChart() {
         acc[curr.year].conservative += curr.conservative;
         acc[curr.year].extension += curr.extension;
         return acc;
-    }, {} as Record<number, ProjectionData>);
+    }, {} as Record<number, Omit<ProjectionData, "cost">>);
 
-    const finalData = Object.values(aggregatedByYear).map(dataPoint => {
+    // 2. Calculate cost projections
+    const costDataByYear = years.map(year => {
+      let yearTotalCost = 0;
+      const relevantCosts = costs.filter(cost => {
+          if (selectedService === 'Tous les services') {
+              return true;
+          }
+          return cost.service === selectedService;
+      });
+      
+      relevantCosts.forEach(cost => {
+          if (cost.category === 'Fixe' || cost.category === 'Variable') {
+              yearTotalCost += cost.annualCost;
+          } else if (cost.category === 'Amortissement') {
+              const startYear = cost.amortizationStartYear ?? 0;
+              const duration = cost.amortizationDuration ?? 0;
+              if (duration > 0 && year >= startYear && year < startYear + duration) {
+                  yearTotalCost += cost.annualCost;
+              }
+          }
+      });
+
+      return {
+          year,
+          cost: Math.round(yearTotalCost / 1000), // in thousands of €
+      };
+    });
+
+    // 3. Merge data and apply scenario factors
+    return years.map(year => {
+      const revenueForYear = aggregatedRevenueByYear[year] || { year, optimistic: 0, conservative: 0, extension: 0 };
+      const costForYear = costDataByYear.find(c => c.year === year);
+
       const optimisticFactor = scenarios.optimistic.adoptionRate / initialScenarioState.optimistic.adoptionRate;
       const conservativeFactor = scenarios.conservative.adoptionRate / initialScenarioState.conservative.adoptionRate;
       const extensionFactor = scenarios.extension.adoptionRate / initialScenarioState.extension.adoptionRate;
 
       return {
-        ...dataPoint,
-        optimistic: Math.round(dataPoint.optimistic * optimisticFactor),
-        conservative: Math.round(dataPoint.conservative * conservativeFactor),
-        extension: Math.round(dataPoint.extension * extensionFactor),
-      }
-    });
-    
-    return finalData.sort((a,b) => a.year - b.year);
+        year: year,
+        optimistic: Math.round(revenueForYear.optimistic * optimisticFactor),
+        conservative: Math.round(revenueForYear.conservative * conservativeFactor),
+        extension: Math.round(revenueForYear.extension * extensionFactor),
+        cost: costForYear ? costForYear.cost : 0,
+      };
+    }).sort((a,b) => a.year - b.year);
 
-  }, [scenarios, selectedService]);
+  }, [scenarios, selectedService, costs]);
+  
+  const handleServiceChange = (value: string) => {
+    const filterKey = value === 'Coûts Mutualisés' ? 'Global' : value;
+    setSelectedService(filterKey);
+  };
 
+  const selectedValue = selectedService === 'Global' ? 'Coûts Mutualisés' : selectedService;
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
-          <CardTitle>Projections Financières</CardTitle>
-          <CardDescription>Prévisions de revenus 2024 - 2029</CardDescription>
+          <CardTitle>Projections Globales</CardTitle>
+          <CardDescription>Prévisions de revenus et coûts 2024 - 2029 (en milliers d'€)</CardDescription>
         </div>
         <div className="w-full max-w-[200px]">
-          <Select value={selectedService} onValueChange={setSelectedService}>
+          <Select value={selectedValue} onValueChange={handleServiceChange}>
             <SelectTrigger>
               <SelectValue placeholder="Filtrer par service" />
             </SelectTrigger>
             <SelectContent>
-              {getServices().map(service => (
+              {servicesForFilter.map(service => (
                 <SelectItem key={service} value={service}>{service}</SelectItem>
               ))}
             </SelectContent>
@@ -151,7 +209,7 @@ export function MainChart() {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[300px] w-full">
-          <BarChart accessibilityLayer data={chartData}>
+          <ComposedChart accessibilityLayer data={chartData}>
             <CartesianGrid vertical={false} />
             <XAxis
               dataKey="year"
@@ -173,7 +231,8 @@ export function MainChart() {
             <Bar dataKey="conservative" fill="var(--color-conservative)" radius={4} />
             <Bar dataKey="extension" fill="var(--color-extension)" radius={4} />
             <Bar dataKey="optimistic" fill="var(--color-optimistic)" radius={4} />
-          </BarChart>
+            <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} />
+          </ComposedChart>
         </ChartContainer>
       </CardContent>
     </Card>
