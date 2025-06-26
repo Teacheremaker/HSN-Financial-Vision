@@ -44,28 +44,28 @@ const services = ["GEOTER", "SPANC", "ROUTE", "ADS", "Global"];
 
 const initialCosts: OperationalCost[] = [
     // --- GEOTER ---
-    { id: "C-G01", service: "GEOTER", costItem: "Coût de développement SIG (HT)", category: "À amortir", annualCost: 69500, notes: "Investissement initial" },
+    { id: "C-G01", service: "GEOTER", costItem: "Coût de développement SIG (HT)", category: "À amortir", annualCost: 69500, notes: "Investissement initial", amortizationStartYear: 2025, amortizationDuration: 8 },
     { id: "C-G02", service: "GEOTER", costItem: "Coût maintenance annuelle SIG (TTC)", category: "Fixe", annualCost: 13471, notes: "" },
     { id: "C-G03", service: "GEOTER", costItem: "Coût maintenance outils HSN (TTC)", category: "Fixe", annualCost: 2562.5, notes: "LIZMAP, FME, GTF" },
     { id: "C-G04", service: "GEOTER", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 64000, notes: "" },
     { id: "C-G05", service: "GEOTER", costItem: "Amortissement Annuel", category: "Amortissement", annualCost: 8687.50, notes: "Sur coût de dév.", amortizationStartYear: 2025, amortizationDuration: 8 },
 
     // --- SPANC ---
-    { id: "C-S01", service: "SPANC", costItem: "Coût développement Applicatif", category: "À amortir", annualCost: 15700, notes: "Investissement initial" },
+    { id: "C-S01", service: "SPANC", costItem: "Coût développement Applicatif", category: "À amortir", annualCost: 15700, notes: "Investissement initial", amortizationStartYear: 2025, amortizationDuration: 8 },
     { id: "C-S02", service: "SPANC", costItem: "Coût maintenance annuelle applicatif", category: "Fixe", annualCost: 5280, notes: "" },
     { id: "C-S03", service: "SPANC", costItem: "Coût maintenance outils HSN (LIZMAP, FME, GTF)", category: "Fixe", annualCost: 512.50, notes: "" },
     { id: "C-S04", service: "SPANC", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 6400, notes: "" },
     { id: "C-S05", service: "SPANC", costItem: "Amortissement Annuel", category: "Amortissement", annualCost: 1962.50, notes: "Sur coût de dév.", amortizationStartYear: 2025, amortizationDuration: 8 },
 
     // --- ROUTE ---
-    { id: "C-R01", service: "ROUTE", costItem: "Coût de développement (HT)", category: "À amortir", annualCost: 60598, notes: "Investissement initial" },
+    { id: "C-R01", service: "ROUTE", costItem: "Coût de développement (HT)", category: "À amortir", annualCost: 60598, notes: "Investissement initial", amortizationStartYear: 2025, amortizationDuration: 8 },
     { id: "C-R02", service: "ROUTE", costItem: "Coût maintenance annuelle (TTC)", category: "Fixe", annualCost: 5280, notes: "" },
     { id: "C-R03", service: "ROUTE", costItem: "Coût maintenance outils HSN (TTC)", category: "Fixe", annualCost: 512.50, notes: "LIZMAP, FME, GTF" },
     { id: "C-R04", service: "ROUTE", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 6400, notes: "" },
     { id: "C-R05", service: "ROUTE", costItem: "Amortissement Annuel", category: "Amortissement", annualCost: 7574.75, notes: "Sur coût de dév.", amortizationStartYear: 2025, amortizationDuration: 8 },
 
     // --- ADS ---
-    { id: "C-A01", service: "ADS", costItem: "Coût de développement (HT)", category: "À amortir", annualCost: 6168, notes: "Investissement initial" },
+    { id: "C-A01", service: "ADS", costItem: "Coût de développement (HT)", category: "À amortir", annualCost: 6168, notes: "Investissement initial", amortizationStartYear: 2025, amortizationDuration: 8 },
     { id: "C-A02", service: "ADS", costItem: "Coût maintenance annuelle (TTC)", category: "Fixe", annualCost: 1000, notes: "" },
     { id: "C-A03", service: "ADS", costItem: "Coût maintenance outils HSN (TTC)", category: "Fixe", annualCost: 512.50, notes: "LIZMAP, FME, GTF" },
     { id: "C-A04", service: "ADS", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 6400, notes: "" },
@@ -86,38 +86,39 @@ export default function CostsPage() {
 
     const handleUpdate = (id: string, field: keyof OperationalCost, value: any) => {
         setCosts(currentCosts => {
-            const tentativelyUpdatedCosts = currentCosts.map(cost =>
+            let updatedCosts = currentCosts.map(cost =>
                 cost.id === id ? { ...cost, [field]: value } : cost
             );
-    
-            const changedCost = tentativelyUpdatedCosts.find(c => c.id === id);
-            if (!changedCost) return tentativelyUpdatedCosts;
-    
-            const investmentCost = tentativelyUpdatedCosts.find(c => c.service === changedCost.service && c.category === 'À amortir');
-            const amortizationLine = tentativelyUpdatedCosts.find(c => c.service === changedCost.service && c.category === 'Amortissement');
-    
-            if (investmentCost && amortizationLine) {
-                const isInvestmentAmountChanged = changedCost.id === investmentCost.id && field === 'annualCost';
-                const isAmortizationDurationChanged = changedCost.id === amortizationLine.id && field === 'amortizationDuration';
-    
-                if (isInvestmentAmountChanged || isAmortizationDurationChanged) {
+
+            const changedCost = updatedCosts.find(c => c.id === id);
+            
+            // If the changed cost is an investment, we need to find its corresponding amortization line and update it.
+            if (changedCost?.category === 'À amortir') {
+                const investmentCost = changedCost;
+                const amortizationLine = updatedCosts.find(c => c.service === investmentCost.service && c.category === 'Amortissement');
+
+                if (amortizationLine) {
                     const amountToAmortize = investmentCost.annualCost;
-                    const duration = amortizationLine.amortizationDuration;
-    
+                    const duration = investmentCost.amortizationDuration;
+                    
                     if (amountToAmortize > 0 && duration && duration > 0) {
                         const calculatedAmortization = amountToAmortize / duration;
-    
-                        return tentativelyUpdatedCosts.map(cost => {
+                        updatedCosts = updatedCosts.map(cost => {
                             if (cost.id === amortizationLine.id) {
-                                return { ...cost, annualCost: calculatedAmortization };
+                                return { 
+                                    ...cost, 
+                                    annualCost: calculatedAmortization,
+                                    amortizationStartYear: investmentCost.amortizationStartYear,
+                                    amortizationDuration: investmentCost.amortizationDuration,
+                                };
                             }
                             return cost;
                         });
                     }
                 }
             }
-    
-            return tentativelyUpdatedCosts;
+            
+            return updatedCosts;
         });
     };
 
@@ -241,7 +242,7 @@ export default function CostsPage() {
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            {isEditing && cost.category === 'Amortissement' ? (
+                                            {isEditing && cost.category === 'À amortir' ? (
                                                 <div className="flex items-center gap-2">
                                                     <div>
                                                         <Label htmlFor={`start-year-${cost.id}`} className="sr-only">Année de début</Label>
