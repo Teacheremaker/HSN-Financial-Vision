@@ -251,12 +251,14 @@ const parseCsv = (csvText: string): Entity[] => {
             })
             .filter((s: ServiceSubscription) => s.name && !isNaN(s.year));
 
+        const statut: 'Actif' | 'Inactif' = services.length > 0 ? 'Actif' : (rowData.statut === 'Actif' ? 'Actif' : 'Inactif');
+
         return {
             id: rowData.id || `ENT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             nom: rowData.nom || 'Sans Nom',
             population: parseInt(rowData.population as any, 10) || 0,
             type: rowData.type === 'Fondatrice' ? 'Fondatrice' : 'Utilisatrice',
-            statut: rowData.statut === 'Actif' ? 'Actif' : 'Inactif',
+            statut,
             services: services,
         };
     });
