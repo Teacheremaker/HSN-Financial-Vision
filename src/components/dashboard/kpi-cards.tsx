@@ -82,7 +82,7 @@ export function KpiCards() {
 
           if (subscription && year >= subscription.year) {
             baseRevenue += price;
-          } else {
+          } else if (!subscription) {
             potentialRevenue += price;
           }
         });
@@ -104,9 +104,10 @@ export function KpiCards() {
       
       const relevantCosts = operationalCosts.filter((c) => {
         if (serviceFilter === 'Tous les services') {
-            return true; // Sum of all costs (GEOTER, SPANC, ..., and Global)
+            return true;
         }
-        return c.service === serviceFilter;
+        // For a specific service, include its direct costs and all Global costs.
+        return c.service === serviceFilter || c.service === 'Global';
       });
 
       relevantCosts.forEach((c) => {

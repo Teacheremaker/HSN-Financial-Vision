@@ -87,7 +87,8 @@ export function MainChart() {
           if (isAllServicesView) {
             return true;
           }
-          return cost.service === selectedService;
+          // For a specific service, include its direct costs and all Global costs.
+          return cost.service === selectedService || cost.service === 'Global';
       });
 
       relevantCosts.forEach(cost => {
@@ -119,7 +120,7 @@ export function MainChart() {
 
             if (subscription && year >= subscription.year) {
                 baseRevenue += price;
-            } else {
+            } else if (!subscription) {
                 potentialRevenue += price;
             }
         });

@@ -105,7 +105,8 @@ const RoiCard = () => {
                 if (serviceFilter === 'Tous les services') {
                     return true;
                 }
-                return c.service === serviceFilter;
+                 // For a specific service, include its direct costs and all Global costs.
+                return c.service === serviceFilter || c.service === 'Global';
             });
             
             relevantCosts.forEach((c) => {
