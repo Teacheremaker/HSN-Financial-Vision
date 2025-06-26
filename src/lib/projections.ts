@@ -3,32 +3,41 @@ import type { Entity, Tariff } from '@/types';
 
 function matchEntityType(category: string): string {
     const cat = category.toLowerCase();
-    if (cat.includes("commune")) return "commune";
-    if (cat.includes("syndicat")) return "syndicat";
-    if (cat.includes("communauté de communes")) return "communauté de communes";
     if (cat.includes("communauté d'agglo")) return "communauté d'agglo";
+    if (cat.includes("communauté de communes")) return "communauté de communes";
+    if (cat.includes("syndicat")) return "syndicat";
     if (cat.includes("département")) return "département";
+    if (cat.includes("commune")) return "commune";
     return "autre";
 }
 
 export function getTariffPriceForEntity(entity: Entity, serviceName: string, allTariffs: Tariff[]): number {
     const serviceTariffs = allTariffs.filter(t => t.service === serviceName);
-    
-    const matchedTariff = serviceTariffs.find(t => {
-        const categoryType = matchEntityType(t.category);
-        const entityType = entity.entityType?.toLowerCase() ?? 'commune';
-        
-        if (categoryType !== 'autre' && categoryType !== entityType) {
-            return false;
-        }
+    const entityTypeLower = entity.entityType?.toLowerCase() ?? 'commune';
 
-        if (t.populationMin !== undefined && t.populationMax !== undefined) {
-             return entity.population >= t.populationMin && entity.population <= t.populationMax;
+    const populationMatches = (tariff: Tariff) => {
+        // A tariff without population criteria matches any population
+        if (tariff.populationMin === undefined && tariff.populationMax === undefined) {
+            return true;
         }
-        
-        // For categories without population ranges, like "Département" or "Autre"
-        return true;
-    });
+        return entity.population >= (tariff.populationMin ?? -Infinity) && entity.population <= (tariff.populationMax ?? Infinity);
+    };
+
+    const findLogic = (typeToMatch: string) => {
+        return serviceTariffs.find(t => {
+            const categoryType = matchEntityType(t.category);
+            return categoryType === typeToMatch && populationMatches(t);
+        });
+    };
+
+    // Pass 1: Try to find a direct match on the entity's specific type.
+    let matchedTariff = findLogic(entityTypeLower);
+
+    // Pass 2: If no direct match was found, fall back to the 'Autre' category.
+    // This is for entities that don't fit standard categories but might have a price.
+    if (!matchedTariff) {
+        matchedTariff = findLogic('autre');
+    }
 
     if (!matchedTariff) return 0;
     
