@@ -16,10 +16,12 @@ export type ProjectionData = {
 
 export type Entity = {
   id: string;
-  name: string;
-  status: 'Actif' | 'Inactif';
-  services: number;
-  roi: string;
+  nom: string;
+  population: number;
+  type: 'Fondatrice' | 'Utilisatrice';
+  statut: 'Actif' | 'Inactif';
+  services: string[];
+  anneeAdhesion: number;
 };
 
 export type Tariff = {
