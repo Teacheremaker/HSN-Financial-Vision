@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Label } from "@/components/ui/label";
@@ -19,6 +18,7 @@ import {
 } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useScenarioStore, type Scenarios, SERVICES } from "@/hooks/use-scenario-store";
+import { Input } from "@/components/ui/input";
 
 const ParameterSlider = ({
   label,
@@ -97,7 +97,7 @@ const ScenarioTab = ({ scenarioName }: { scenarioName: keyof Scenarios }) => {
 };
 
 export function ScenarioControls() {
-  const { activeScenario, setActiveScenario } = useScenarioStore();
+  const { activeScenario, setActiveScenario, startYear, setStartYear, endYear, setEndYear } = useScenarioStore();
 
   return (
     <Card>
@@ -108,6 +108,40 @@ export function ScenarioControls() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Période de Projection</Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1">
+              <Label htmlFor="start-year" className="text-xs text-muted-foreground">Début</Label>
+              <Input
+                id="start-year"
+                type="number"
+                value={startYear}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val)) setStartYear(val);
+                }}
+                min="2020"
+                max={endYear - 1}
+              />
+            </div>
+            <div className="grid gap-1">
+              <Label htmlFor="end-year" className="text-xs text-muted-foreground">Fin</Label>
+              <Input
+                id="end-year"
+                type="number"
+                value={endYear}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val)) setEndYear(val);
+                }}
+                min={startYear + 1}
+                max="2050"
+              />
+            </div>
+          </div>
+        </div>
+        <Separator />
         <Tabs
           value={activeScenario}
           onValueChange={(value) => setActiveScenario(value as keyof Scenarios)}

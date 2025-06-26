@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useMemo, useState, useEffect } from "react";
@@ -115,12 +114,15 @@ const chartConfig = {
 }
 
 const servicesForFilter = ['Tous les services', ...SERVICES, 'Coûts Mutualisés'];
-const years = Array.from({ length: 9 }, (_, i) => 2025 + i);
 
 export function MainChart() {
-  const { scenarios, activeScenario } = useScenarioStore();
+  const { scenarios, activeScenario, startYear, endYear } = useScenarioStore();
   const { selectedService, setSelectedService } = useChartFilterStore();
   const [costs, setCosts] = useState<OperationalCost[]>(initialCosts);
+  const years = useMemo(() => {
+    if (startYear > endYear) return [];
+    return Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i)
+  }, [startYear, endYear]);
 
   useEffect(() => {
       try {
@@ -146,7 +148,7 @@ export function MainChart() {
 
         const currentScenario = scenarios[activeScenario];
         const indexationRate = currentScenario.indexationRate / 100;
-        const baseYear = 2025;
+        const baseYear = startYear;
         const numYearsIndexed = year > baseYear ? year - baseYear : 0;
         
         relevantCosts.forEach(cost => {
@@ -166,7 +168,7 @@ export function MainChart() {
 
     // 2. Map years to create final data, merging revenue and cost
     return years.map(year => {
-      const baseYear = 2025;
+      const baseYear = startYear;
       const numYearsIncreased = year > baseYear ? year - baseYear : 0;
 
       const optimisticPriceIncreaseFactor = Math.pow(1 + (scenarios.optimistic.priceIncrease / 100), numYearsIncreased);
@@ -207,7 +209,7 @@ export function MainChart() {
       };
     }).sort((a,b) => a.year - b.year);
 
-  }, [scenarios, activeScenario, selectedService, costs]);
+  }, [scenarios, activeScenario, selectedService, costs, years, startYear]);
   
   const handleServiceChange = (value: string) => {
     const filterKey = value === 'Coûts Mutualisés' ? 'Global' : value;
@@ -221,7 +223,7 @@ export function MainChart() {
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
           <CardTitle>Projections Globales</CardTitle>
-          <CardDescription>Prévisions de revenus et coûts 2025 - 2033 (en milliers d'€)</CardDescription>
+          <CardDescription>Prévisions de revenus et coûts {startYear} - {endYear} (en milliers d'€)</CardDescription>
         </div>
         <div className="w-full max-w-[200px]">
           <Select value={selectedValue} onValueChange={handleServiceChange}>

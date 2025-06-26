@@ -1,4 +1,3 @@
-
 'use client';
 import { create } from 'zustand';
 
@@ -24,6 +23,8 @@ export type Scenarios = {
 type State = {
   scenarios: Scenarios;
   activeScenario: keyof Scenarios;
+  startYear: number;
+  endYear: number;
 };
 
 type Actions = {
@@ -38,6 +39,8 @@ type Actions = {
     service: Service,
     value: number
   ) => void;
+  setStartYear: (year: number) => void;
+  setEndYear: (year: number) => void;
 };
 
 const initialState: Scenarios = {
@@ -62,6 +65,8 @@ const initialState: Scenarios = {
 export const useScenarioStore = create<State & Actions>((set) => ({
   scenarios: initialState,
   activeScenario: 'optimistic',
+  startYear: 2025,
+  endYear: 2033,
   setActiveScenario: (scenario) => set({ activeScenario: scenario }),
   updateScenarioValue: (scenario, param, value) => set((state) => ({
     scenarios: {
@@ -84,6 +89,8 @@ export const useScenarioStore = create<State & Actions>((set) => ({
       },
     },
   })),
+  setStartYear: (year) => set({ startYear: year }),
+  setEndYear: (year) => set({ endYear: year }),
 }));
 
 export const initialScenarioState = initialState;
