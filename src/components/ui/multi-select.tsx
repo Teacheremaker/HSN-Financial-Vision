@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -31,23 +32,21 @@ interface MultiSelectProps {
   onChange: (selected: string[]) => void
   className?: string
   placeholder?: string
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
-  ({ options, selected, onChange, className, placeholder = "Select options..." }, ref) => {
-    const [open, setOpen] = React.useState(false)
-
-    const handleSelect = (value: string) => {
-      const newSelected = selected.includes(value)
-        ? selected.filter((item) => item !== value)
-        : [...selected, value]
-      onChange(newSelected)
-    }
+  ({ options, selected, onChange, className, placeholder = "Select options...", open, onOpenChange }, ref) => {
     
     const selectedOptions = options.filter(option => selected.includes(option.value));
 
+    const handleUnselect = (value: string) => {
+        onChange(selected.filter(s => s !== value));
+    }
+
     return (
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>
           <Button
             ref={ref}
@@ -55,7 +54,7 @@ const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
             role="combobox"
             aria-expanded={open}
             className={cn("w-full justify-between h-auto min-h-8", className)}
-            onClick={() => setOpen(!open)}
+            onClick={() => onOpenChange?.(!open)}
           >
               <div className="flex gap-1 flex-wrap">
               {selectedOptions.length > 0 ? (
@@ -66,7 +65,7 @@ const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
                           className="mr-1"
                           onClick={(e) => {
                               e.stopPropagation();
-                              handleSelect(option.value);
+                              handleUnselect(option.value);
                           }}
                       >
                           {option.label}
@@ -90,8 +89,12 @@ const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
                   <CommandItem
                     key={option.value}
                     value={option.value}
-                    onSelect={() => {
-                      handleSelect(option.value)
+                    onSelect={(currentValue) => {
+                      if (selected.includes(currentValue)) {
+                        onChange(selected.filter((item) => item !== currentValue));
+                      } else {
+                        onChange([...selected, currentValue]);
+                      }
                     }}
                     onMouseDown={(e) => {
                       e.preventDefault();

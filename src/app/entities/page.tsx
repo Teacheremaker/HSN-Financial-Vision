@@ -174,6 +174,11 @@ const EditableCell = ({ getValue, row, column, table }) => {
             );
             onUpdate(newServices);
         };
+
+        const isSelectOpen = tableMeta?.openSelectId === row.id;
+        const setSelectOpen = (open: boolean) => {
+            tableMeta?.setOpenSelectId(open ? row.id : null);
+        };
         
         return (
             <div className="space-y-2 min-w-[250px]">
@@ -183,6 +188,8 @@ const EditableCell = ({ getValue, row, column, table }) => {
                     onChange={handleServiceSelectionChange}
                     className="w-full"
                     placeholder="Sélectionner des services..."
+                    open={isSelectOpen}
+                    onOpenChange={setSelectOpen}
                 />
                 <div className="space-y-1 max-h-24 overflow-y-auto pr-2">
                     {currentServices.map((service) => (
@@ -284,6 +291,7 @@ export default function EntitiesPage() {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [editingRowId, setEditingRowId] = React.useState<string | null>(null);
+  const [openSelectId, setOpenSelectId] = React.useState<string | null>(null);
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -449,6 +457,8 @@ export default function EntitiesPage() {
     meta: {
       editingRowId,
       setEditingRowId,
+      openSelectId,
+      setOpenSelectId,
       updateData: (rowIndex: number, columnId: string, value: any) => {
         setData((old) =>
           old.map((row, index) => {
