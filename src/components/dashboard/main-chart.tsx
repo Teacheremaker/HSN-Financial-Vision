@@ -172,16 +172,24 @@ export function MainChart() {
     return years.map(year => {
       const revenueForYear = aggregatedRevenueByYear[year] || { year, optimistic: 0, conservative: 0, extension: 0 };
       const costForYear = costDataByYear.find(c => c.year === year);
+      
+      const baseYear = 2024;
+      const numYearsIncreased = year > baseYear ? year - baseYear : 0;
 
-      const optimisticFactor = scenarios.optimistic.adoptionRate / initialScenarioState.optimistic.adoptionRate;
-      const conservativeFactor = scenarios.conservative.adoptionRate / initialScenarioState.conservative.adoptionRate;
-      const extensionFactor = scenarios.extension.adoptionRate / initialScenarioState.extension.adoptionRate;
+      // Factors for each scenario
+      const optimisticAdoptionFactor = scenarios.optimistic.adoptionRate / initialScenarioState.optimistic.adoptionRate;
+      const conservativeAdoptionFactor = scenarios.conservative.adoptionRate / initialScenarioState.conservative.adoptionRate;
+      const extensionAdoptionFactor = scenarios.extension.adoptionRate / initialScenarioState.extension.adoptionRate;
+
+      const optimisticPriceIncreaseFactor = Math.pow(1 + (scenarios.optimistic.priceIncrease / 100), numYearsIncreased);
+      const conservativePriceIncreaseFactor = Math.pow(1 + (scenarios.conservative.priceIncrease / 100), numYearsIncreased);
+      const extensionPriceIncreaseFactor = Math.pow(1 + (scenarios.extension.priceIncrease / 100), numYearsIncreased);
 
       return {
         year: year,
-        optimistic: Math.round(revenueForYear.optimistic * optimisticFactor),
-        conservative: Math.round(revenueForYear.conservative * conservativeFactor),
-        extension: Math.round(revenueForYear.extension * extensionFactor),
+        optimistic: Math.round(revenueForYear.optimistic * optimisticAdoptionFactor * optimisticPriceIncreaseFactor),
+        conservative: Math.round(revenueForYear.conservative * conservativeAdoptionFactor * conservativePriceIncreaseFactor),
+        extension: Math.round(revenueForYear.extension * extensionAdoptionFactor * extensionPriceIncreaseFactor),
         cost: costForYear ? costForYear.cost : 0,
       };
     }).sort((a,b) => a.year - b.year);
