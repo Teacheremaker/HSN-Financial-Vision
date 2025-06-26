@@ -138,29 +138,40 @@ export function KpiCards() {
     };
 
 
-    const currentValues = calculateAnnualValues(
+    const currentValuesForEnd = calculateAnnualValues(
       scenario,
       selectedService,
       endYear
     );
-    const initialValues = calculateAnnualValues(
+    const initialValuesForEnd = calculateAnnualValues(
       initialScenarioState,
       selectedService,
       endYear
     );
 
+    const currentValuesForStart = calculateAnnualValues(
+        scenario,
+        selectedService,
+        startYear
+    );
+    const initialValuesForStart = calculateAnnualValues(
+        initialScenarioState,
+        selectedService,
+        startYear
+    );
+
     const revenueChange =
-      initialValues.revenue > 0
-        ? (currentValues.revenue / initialValues.revenue - 1) * 100
-        : currentValues.revenue > 0
+      initialValuesForEnd.revenue > 0
+        ? (currentValuesForEnd.revenue / initialValuesForEnd.revenue - 1) * 100
+        : currentValuesForEnd.revenue > 0
         ? 100
         : 0;
     const revenueChangeText = `${revenueChange >= 0 ? '+' : ''}${revenueChange.toFixed(1)}% depuis le scénario initial`;
 
     const costChange =
-      initialValues.cost > 0
-        ? (currentValues.cost / initialValues.cost - 1) * 100
-        : currentValues.cost > 0
+      initialValuesForStart.cost > 0
+        ? (currentValuesForStart.cost / initialValuesForStart.cost - 1) * 100
+        : currentValuesForStart.cost > 0
         ? 100
         : 0;
     const costChangeText = `${costChange >= 0 ? '+' : ''}${costChange.toFixed(1)}% depuis le scénario initial`;
@@ -180,13 +191,13 @@ export function KpiCards() {
     const kpis = [
       {
         name: `Revenu Total${serviceName} (${endYear})`,
-        value: `€${currentValues.revenue.toLocaleString('fr-FR', {
+        value: `€${currentValuesForEnd.revenue.toLocaleString('fr-FR', {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })}`,
         change: revenueChangeText,
         changeType:
-          currentValues.revenue >= initialValues.revenue ? 'increase' : 'decrease',
+          currentValuesForEnd.revenue >= initialValuesForEnd.revenue ? 'increase' : 'decrease',
         icon: DollarSign,
       },
       {
@@ -200,13 +211,13 @@ export function KpiCards() {
         icon: Users,
       },
       {
-        name: `Coût Opérationnel${serviceName} (${endYear})`,
-        value: `€${currentValues.cost.toLocaleString('fr-FR', {
+        name: `Coût Opérationnel${serviceName} (${startYear})`,
+        value: `€${currentValuesForStart.cost.toLocaleString('fr-FR', {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })}`,
         change: costChangeText,
-        changeType: currentValues.cost <= initialValues.cost ? 'increase' : 'decrease', // Lower cost is good
+        changeType: currentValuesForStart.cost <= initialValuesForStart.cost ? 'increase' : 'decrease', // Lower cost is good
         icon: ArrowDownRight,
       },
     ] as KpiData[];
