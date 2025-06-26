@@ -1,6 +1,7 @@
 
 "use client"
 
+import { useMemo } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
@@ -18,8 +19,9 @@ import {
   ChartLegendContent
 } from "@/components/ui/chart"
 import type { ProjectionData } from "@/types"
+import { useScenarioStore, initialScenarioState } from "@/hooks/use-scenario-store";
 
-const chartData: ProjectionData[] = [
+const baseChartData: ProjectionData[] = [
   { year: 2024, optimistic: 186, conservative: 80, extension: 120 },
   { year: 2025, optimistic: 305, conservative: 200, extension: 250 },
   { year: 2026, optimistic: 237, conservative: 120, extension: 180 },
@@ -47,6 +49,24 @@ const chartConfig = {
 }
 
 export function MainChart() {
+  const { scenarios } = useScenarioStore();
+
+  const chartData = useMemo(() => {
+    return baseChartData.map(dataPoint => {
+      const optimisticFactor = scenarios.optimistic.adoptionRate / initialScenarioState.optimistic.adoptionRate;
+      const conservativeFactor = scenarios.conservative.adoptionRate / initialScenarioState.conservative.adoptionRate;
+      const extensionFactor = scenarios.extension.adoptionRate / initialScenarioState.extension.adoptionRate;
+
+      return {
+        ...dataPoint,
+        optimistic: Math.round(dataPoint.optimistic * optimisticFactor),
+        conservative: Math.round(dataPoint.conservative * conservativeFactor),
+        extension: Math.round(dataPoint.extension * extensionFactor),
+      }
+    });
+  }, [scenarios]);
+
+
   return (
     <Card>
       <CardHeader>

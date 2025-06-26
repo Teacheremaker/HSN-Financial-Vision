@@ -1,7 +1,6 @@
 
 "use client";
 
-import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -19,17 +18,19 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { useScenarioStore, type Scenarios } from "@/hooks/use-scenario-store";
 
 const ParameterSlider = ({
   label,
-  defaultValue,
+  value,
+  onValueChange,
   valueSuffix = "%",
 }: {
   label: string;
-  defaultValue: number;
+  value: number;
+  onValueChange: (value: number) => void;
   valueSuffix?: string;
 }) => {
-  const [value, setValue] = useState(defaultValue);
   return (
     <div className="grid gap-2">
       <div className="flex justify-between items-center">
@@ -41,7 +42,7 @@ const ParameterSlider = ({
       </div>
       <Slider
         value={[value]}
-        onValueChange={(vals) => setValue(vals[0])}
+        onValueChange={(vals) => onValueChange(vals[0])}
         max={100}
         step={1}
       />
@@ -49,21 +50,40 @@ const ParameterSlider = ({
   );
 };
 
-const ScenarioTab = ({ title }: { title: string }) => (
-  <div className="space-y-4">
-    <ParameterSlider label="Taux d'Adoption" defaultValue={75} />
-    <ParameterSlider label="Augmentation des Tarifs" defaultValue={5} />
-    <ParameterSlider label="Taux d'Indexation" defaultValue={2} />
-    <div className="flex items-center space-x-2">
-      <Switch id={`autosave-${title.toLowerCase()}`} defaultChecked />
-      <Label htmlFor={`autosave-${title.toLowerCase()}`}>
-        Sauvegarde auto.
-      </Label>
+const ScenarioTab = ({ scenarioName }: { scenarioName: keyof Scenarios }) => {
+  const { scenarios, updateScenarioValue } = useScenarioStore();
+  const scenario = scenarios[scenarioName];
+
+  return (
+    <div className="space-y-4">
+      <ParameterSlider
+        label="Taux d'Adoption"
+        value={scenario.adoptionRate}
+        onValueChange={(value) => updateScenarioValue(scenarioName, 'adoptionRate', value)}
+      />
+      <ParameterSlider
+        label="Augmentation des Tarifs"
+        value={scenario.priceIncrease}
+        onValueChange={(value) => updateScenarioValue(scenarioName, 'priceIncrease', value)}
+      />
+      <ParameterSlider
+        label="Taux d'Indexation"
+        value={scenario.indexationRate}
+        onValueChange={(value) => updateScenarioValue(scenarioName, 'indexationRate', value)}
+      />
+      <div className="flex items-center space-x-2">
+        <Switch id={`autosave-${scenarioName.toLowerCase()}`} defaultChecked />
+        <Label htmlFor={`autosave-${scenarioName.toLowerCase()}`}>
+          Sauvegarde auto.
+        </Label>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export function ScenarioControls() {
+  const { activeScenario, setActiveScenario } = useScenarioStore();
+
   return (
     <Card>
       <CardHeader>
@@ -73,20 +93,23 @@ export function ScenarioControls() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Tabs defaultValue="optimistic">
+        <Tabs
+          value={activeScenario}
+          onValueChange={(value) => setActiveScenario(value as keyof Scenarios)}
+        >
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="optimistic">Optimiste</TabsTrigger>
             <TabsTrigger value="conservative">Conservateur</TabsTrigger>
             <TabsTrigger value="extension">Extension</TabsTrigger>
           </TabsList>
           <TabsContent value="optimistic" className="pt-4">
-            <ScenarioTab title="Optimistic" />
+            <ScenarioTab scenarioName="optimistic" />
           </TabsContent>
           <TabsContent value="conservative" className="pt-4">
-            <ScenarioTab title="Conservative" />
+            <ScenarioTab scenarioName="conservative" />
           </TabsContent>
           <TabsContent value="extension" className="pt-4">
-            <ScenarioTab title="Extension" />
+            <ScenarioTab scenarioName="extension" />
           </TabsContent>
         </Tabs>
         <Separator />
