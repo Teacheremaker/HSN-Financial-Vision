@@ -50,6 +50,24 @@ const initialTariffs: Tariff[] = [
     { id: 'T-G-14', service: 'GEOTER', category: 'Communauté de communes > 20 000 habitants', populationMin: 20001, populationMax: 100000, priceFounder: 2500, priceUser: 2500, discountFounder: 100 },
     { id: 'T-G-15', service: 'GEOTER', category: 'Communauté d\'agglo', populationMin: 0, populationMax: 100000, priceFounder: 5000, priceUser: 5000, discountFounder: 0 },
     { id: 'T-G-16', service: 'GEOTER', category: 'Département', populationMin: 0, populationMax: 300000, priceFounder: 5000, priceUser: 5000, discountFounder: 100 },
+
+    // SPANC
+    { id: 'T-S-01', service: 'SPANC', category: 'Communes 0 à 250', populationMin: 0, populationMax: 250, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-02', service: 'SPANC', category: 'Communes 251 à 500', populationMin: 251, populationMax: 500, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-03', service: 'SPANC', category: 'Communes 501 à 750', populationMin: 501, populationMax: 750, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-04', service: 'SPANC', category: 'Communes 751 à 1000', populationMin: 751, populationMax: 1000, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-05', service: 'SPANC', category: 'Communes 1001 à 3000', populationMin: 1001, populationMax: 3000, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-06', service: 'SPANC', category: 'Communes Supérieur à 3000', populationMin: 3001, populationMax: 20000, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-07', service: 'SPANC', category: 'syndicats ≤ 4 000 habitants', populationMin: 1, populationMax: 4000, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-08', service: 'SPANC', category: 'syndicats de 4 001 à 10 000 habitants', populationMin: 4001, populationMax: 10000, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-09', service: 'SPANC', category: 'syndicats > à 10 000 habitants', populationMin: 10001, populationMax: 20000, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-10', service: 'SPANC', category: 'syndicats > à 20 000 habitants', populationMin: 20001, populationMax: 40000, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-11', service: 'SPANC', category: 'Autre (SDSIS, OPH, ingenieurie70)', priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-12', service: 'SPANC', category: 'Communauté de communes < 10 000 habitants', populationMin: 1, populationMax: 10000, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-13', service: 'SPANC', category: 'Communauté de communes de 10 001 à 20 000 habitants', populationMin: 10001, populationMax: 20000, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-14', service: 'SPANC', category: 'Communauté de communes > 20 000 habitants', populationMin: 20001, populationMax: 100000, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-15', service: 'SPANC', category: 'Communauté d\'agglo', populationMin: 0, populationMax: 100000, priceFounder: 850, priceUser: 1200 },
+    { id: 'T-S-16', service: 'SPANC', category: 'Département', populationMin: 0, populationMax: 300000, priceFounder: 850, priceUser: 1200 },
 ];
 
 const services = ["GEOTER", "SPANC", "ROUTE", "ADS"];
