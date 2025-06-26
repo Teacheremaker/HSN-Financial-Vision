@@ -36,14 +36,13 @@ type RevenueData = {
 };
 
 export default function RevenuesPage() {
-    const { scenario } = useScenarioStore();
+    const { scenario, startYear } = useScenarioStore();
     const { entities } = useEntityStore();
     const { tariffs } = useTariffStore();
     const [activeTab, setActiveTab] = useState('Cumulé');
 
     const revenueDataByService = useMemo(() => {
         const data: { [key: string]: RevenueData[] } = {};
-        const startYear = 2025;
 
         TABS.forEach(tab => {
             const tabData: RevenueData[] = [];
@@ -96,7 +95,7 @@ export default function RevenuesPage() {
 
         return data;
 
-    }, [scenario, entities, tariffs]);
+    }, [scenario, entities, tariffs, startYear]);
     
     const formatCurrency = (value: number) => {
         return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
