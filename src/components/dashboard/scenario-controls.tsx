@@ -145,8 +145,13 @@ const RoiCard = () => {
 
         const serviceName = selectedService === 'Tous les services' ? '' : ` ${selectedService}`;
 
+        const roiIsPositive = isFinite(newRoi) && newRoi >= 0;
+        const valueColor = roiIsPositive ? 'text-green-600 dark:text-green-500' : 'text-orange-500 dark:text-orange-400';
+
+
         return {
             value: isFinite(newRoi) ? `${newRoi.toFixed(1)}%` : '∞',
+            valueColor,
             change: formatChange(roiChange),
             changeColor,
             ChangeIcon,
@@ -161,7 +166,7 @@ const RoiCard = () => {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">{roiData.value}</div>
+                <div className={`text-2xl font-bold ${roiData.valueColor}`}>{roiData.value}</div>
                 <p className={`text-xs ${roiData.changeColor} flex items-center`}>
                     <roiData.ChangeIcon className="h-3 w-3 mr-1" />
                     {roiData.change} depuis le scénario initial
