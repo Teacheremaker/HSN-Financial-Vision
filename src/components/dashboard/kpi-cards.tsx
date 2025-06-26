@@ -62,8 +62,7 @@ export function KpiCards() {
       serviceFilter: string,
       year: number
     ) => {
-      let totalBaseRevenue = 0;
-      let totalAdditionalRevenue = 0;
+      let revenue = 0;
       let cost = 0;
 
       // --- Revenue ---
@@ -88,12 +87,9 @@ export function KpiCards() {
 
         const serviceKey = service as keyof AdoptionRates;
         const adoptionRatePercent = scenario.adoptionRates[serviceKey];
-        totalBaseRevenue += baseRevenue;
-        totalAdditionalRevenue += potentialRevenue * (adoptionRatePercent / 100);
+        revenue += (baseRevenue + potentialRevenue * (adoptionRatePercent / 100));
       });
-
-      const finalTotalRevenue = (totalBaseRevenue + totalAdditionalRevenue) * priceIncreaseFactor;
-      const finalAdditionalRevenue = totalAdditionalRevenue * priceIncreaseFactor;
+      revenue *= priceIncreaseFactor;
 
       // --- Cost ---
       const indexationRate = scenario.indexationRate / 100;
@@ -118,7 +114,7 @@ export function KpiCards() {
         }
       });
 
-      return { revenue: finalTotalRevenue, cost, additionalRevenue: finalAdditionalRevenue };
+      return { revenue, cost };
     };
     
     const calculateSubscriptionRate = (year: number, serviceFilter: string): number => {
@@ -152,11 +148,15 @@ export function KpiCards() {
         selectedService,
         startYear
     );
-
-    const additionalRevenueText = `+${currentValuesForEnd.additionalRevenue.toLocaleString('fr-FR', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      })} € (Adoption)`;
+    
+    // Revenue Change
+    const revenueChange =
+      initialValuesForStart.revenue > 0
+        ? (currentValuesForEnd.revenue / initialValuesForStart.revenue - 1) * 100
+        : currentValuesForEnd.revenue > 0
+        ? 100
+        : 0;
+    const revenueChangeText = `${revenueChange >= 0 ? '+' : ''}${revenueChange.toFixed(1)}% depuis le scénario initial`;
 
     const costChange =
       initialValuesForStart.cost > 0
@@ -170,6 +170,7 @@ export function KpiCards() {
     const initialSubscriptionRate = calculateSubscriptionRate(startYear, selectedService);
     const subscriptionChange = currentSubscriptionRate - initialSubscriptionRate;
     const subscriptionChangeText = `${subscriptionChange >= 0 ? '+' : ''}${subscriptionChange.toFixed(1)} pts depuis ${startYear}`;
+
 
     const serviceName =
       selectedService === 'Tous les services' ? '' : ` ${selectedService}`;
@@ -185,7 +186,7 @@ export function KpiCards() {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })}`,
-        change: additionalRevenueText,
+        change: revenueChangeText,
         changeType: 'increase',
         icon: DollarSign,
       },

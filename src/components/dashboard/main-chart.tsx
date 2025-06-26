@@ -32,13 +32,9 @@ import { useCostStore } from "@/hooks/use-cost-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
 
 const chartConfig = {
-  baseRevenue: {
-    label: "Revenu de base",
+  revenue: {
+    label: "Revenu",
     color: "hsl(var(--chart-1))",
-  },
-  additionalRevenue: {
-    label: "Revenu d'adoption",
-    color: "hsl(var(--chart-2))",
   },
   cost: {
     label: "Coûts Opérationnels",
@@ -95,8 +91,7 @@ export function MainChart() {
       dataPoint.cost = Math.round(yearTotalCost / 1000);
 
       // --- Revenue Calculation ---
-      let yearTotalBaseRevenue = 0;
-      let yearTotalAdditionalRevenue = 0;
+      let yearTotalRevenue = 0;
       const servicesToCalculate = isAllServicesView ? SERVICES : (SERVICES.includes(selectedService as any) ? [selectedService as Service] : []);
       const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
 
@@ -118,14 +113,10 @@ export function MainChart() {
 
         const serviceKey = service as keyof AdoptionRates;
         const adoptionRatePercent = scenario.adoptionRates[serviceKey];
-        const additionalRevenue = potentialRevenue * (adoptionRatePercent / 100);
-
-        yearTotalBaseRevenue += baseRevenue;
-        yearTotalAdditionalRevenue += additionalRevenue;
+        yearTotalRevenue += (baseRevenue + potentialRevenue * (adoptionRatePercent / 100));
       });
 
-      dataPoint.baseRevenue = Math.round((yearTotalBaseRevenue * priceIncreaseFactor) / 1000);
-      dataPoint.additionalRevenue = Math.round((yearTotalAdditionalRevenue * priceIncreaseFactor) / 1000);
+      dataPoint.revenue = Math.round((yearTotalRevenue * priceIncreaseFactor) / 1000);
 
       return dataPoint;
     }).sort((a,b) => a.year - b.year);
@@ -174,8 +165,7 @@ export function MainChart() {
             />
             <ChartLegend content={<ChartLegendContent />} />
             
-            <Bar dataKey="baseRevenue" fill="var(--color-baseRevenue)" stackId="revenue" radius={0} />
-            <Bar dataKey="additionalRevenue" fill="var(--color-additionalRevenue)" stackId="revenue" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
 
             <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} />
           </ComposedChart>
