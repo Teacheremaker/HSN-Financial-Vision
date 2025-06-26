@@ -37,3 +37,12 @@ export type OperationalCost = {
   monthlyCost: number;
   notes: string;
 };
+
+export type Adherent = {
+  id: string;
+  name: string;
+  population: number;
+  status: 'Fondatrice' | 'Utilisatrice';
+  adhesionDate: string;
+  services: string[];
+};

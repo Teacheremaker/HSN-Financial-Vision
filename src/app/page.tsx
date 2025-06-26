@@ -6,6 +6,7 @@ import { MainChart } from "@/components/dashboard/main-chart";
 import { ScenarioControls } from "@/components/dashboard/scenario-controls";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
+import { ProfitabilityProjection } from "@/components/dashboard/profitability-projection";
 
 export default function DashboardPage() {
   return (
@@ -29,8 +30,11 @@ export default function DashboardPage() {
              <ScenarioControls />
           </div>
         </div>
-        <div className="max-w-4xl mx-auto">
-            <AiOptimizer />
+        <div className="grid gap-4">
+            <ProfitabilityProjection />
+            <div className="max-w-4xl mx-auto w-full">
+                <AiOptimizer />
+            </div>
         </div>
       </main>
     </div>
