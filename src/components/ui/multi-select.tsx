@@ -93,6 +93,10 @@ const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
                       handleSelect(option.value)
                     }}
                     value={option.value}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
                   >
                     <Check
                       className={cn(
