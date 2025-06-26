@@ -101,6 +101,22 @@ export function ProfitabilityProjection() {
 
   const isComparativeMode = selectedService === 'Tous les services' && viewMode === 'comparative';
 
+  const annualCosts = React.useMemo(() => {
+    const serviceFilteredCosts = costs.filter(cost => {
+      if (selectedService === 'Tous les services') {
+        return true;
+      }
+      return cost.service === selectedService;
+    });
+
+    return serviceFilteredCosts.reduce((sum, cost) => {
+        if (cost.category === 'Fixe' || cost.category === 'Variable' || cost.category === 'Amortissement') {
+            return sum + cost.annualCost;
+        }
+        return sum;
+    }, 0);
+  }, [costs, selectedService]);
+
   const chartData = React.useMemo(() => {
     const sortedEntities = [...entities]
       .filter(e => e.services.length > 0)
@@ -115,14 +131,6 @@ export function ProfitabilityProjection() {
     
     const serviceRevenueAcc: { [key: string]: number } = {};
     SERVICES.forEach(s => serviceRevenueAcc[s.name] = 0);
-
-    const annualCosts = costs.reduce((sum, cost) => {
-        if (cost.category === 'Fixe' || cost.category === 'Variable' || cost.category === 'Amortissement') {
-            return sum + cost.annualCost;
-        }
-        return sum;
-    }, 0);
-
 
     for (let i = 0; i < sortedEntities.length; i++) {
       const entity = sortedEntities[i];
@@ -158,7 +166,7 @@ export function ProfitabilityProjection() {
       data.push(dataPoint);
     }
     return data;
-  }, [entities, tariffs, costs, selectedService, viewMode, isComparativeMode]);
+  }, [entities, tariffs, selectedService, viewMode, isComparativeMode, annualCosts]);
 
   const breakEvenPoint = React.useMemo(() => {
     const point = chartData.find(d => d.resultat >= 0);
