@@ -89,13 +89,13 @@ const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
                 {options.map((option) => (
                   <CommandItem
                     key={option.value}
-                    onSelect={() => {
-                      handleSelect(option.value)
-                    }}
                     value={option.value}
                     onMouseDown={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onSelect={() => {
+                      handleSelect(option.value)
                     }}
                   >
                     <Check
