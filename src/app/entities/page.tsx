@@ -6,11 +6,13 @@ import type {
   ColumnDef,
   ColumnFiltersState,
   SortingState,
+  PaginationState,
 } from '@tanstack/react-table';
 import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
@@ -22,6 +24,10 @@ import {
   PlusCircle,
   MoreHorizontal,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -67,6 +73,16 @@ const initialData: Entity[] = [
     { id: 'ENT-003', nom: 'Village d\'Oakhaven', population: 5000, type: 'Utilisatrice', statut: 'Inactif', services: [] },
     { id: 'ENT-004', nom: 'Arrondissement d\'Ironwood', population: 120000, type: 'Fondatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2022}, {name: 'SPANC', year: 2022}, {name: 'ROUTE', year: 2024}] },
     { id: 'ENT-005', nom: 'Municipalité de Sunfield', population: 12000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'SPANC', year: 2024}, {name: 'ADS', year: 2025}] },
+    { id: 'ENT-006', nom: 'Ville de Redwood', population: 35000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2024}]},
+    { id: 'ENT-007', nom: 'Bourg de Greenfield', population: 8000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'ROUTE', year: 2025}]},
+    { id: 'ENT-008', nom: 'Ville de Starfall', population: 62000, type: 'Fondatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2022}, {name: 'ADS', year: 2023}]},
+    { id: 'ENT-009', nom: 'Hameau de Whisperwind', population: 1200, type: 'Utilisatrice', statut: 'Inactif', services: []},
+    { id: 'ENT-010', nom: 'Cité de Crystalcreek', population: 95000, type: 'Fondatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2022}, {name: 'SPANC', year: 2023}, {name: 'ROUTE', year: 2024}, {name: 'ADS', year: 2025}]},
+    { id: 'ENT-011', nom: 'Comté de Stonefield', population: 15000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'SPANC', year: 2024}]},
+    { id: 'ENT-012', nom: 'Ville de Moonshadow', population: 22000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2023}, {name: 'ADS', year: 2024}]},
+    { id: 'ENT-013', nom: 'Village de Riverbend', population: 3000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'ROUTE', year: 2024}]},
+    { id: 'ENT-014', nom: 'Ville de Emberfall', population: 48000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2024}]},
+    { id: 'ENT-015', nom: 'Paroisse de Summerisle', population: 18000, type: 'Utilisatrice', statut: 'Inactif', services: []},
 ];
 
 const SERVICE_OPTIONS: MultiSelectOption[] = [
@@ -259,6 +275,10 @@ export default function EntitiesPage() {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [editingRowId, setEditingRowId] = React.useState<string | null>(null);
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -410,9 +430,12 @@ export default function EntitiesPage() {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onPaginationChange: setPagination,
     state: {
       sorting,
       columnFilters,
+      pagination,
     },
     meta: {
       editingRowId,
@@ -550,11 +573,78 @@ export default function EntitiesPage() {
                 </TableBody>
               </Table>
             </div>
+            <div className="flex items-center justify-between space-x-2 py-4">
+                <div className="flex-1 text-sm text-muted-foreground">
+                    {table.getFilteredRowModel().rows.length} ligne(s) trouvée(s).
+                </div>
+                <div className="flex items-center space-x-6 lg:space-x-8">
+                    <div className="flex items-center space-x-2">
+                        <p className="text-sm font-medium">Lignes par page</p>
+                        <Select
+                            value={`${table.getState().pagination.pageSize}`}
+                            onValueChange={(value) => {
+                                table.setPageSize(Number(value))
+                            }}
+                        >
+                            <SelectTrigger className="h-8 w-[70px]">
+                                <SelectValue placeholder={table.getState().pagination.pageSize} />
+                            </SelectTrigger>
+                            <SelectContent side="top">
+                                {[10, 20, 30, 40, 50].map((pageSize) => (
+                                    <SelectItem key={pageSize} value={`${pageSize}`}>
+                                        {pageSize}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+                        Page {table.getState().pagination.pageIndex + 1} sur{' '}
+                        {table.getPageCount()}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Button
+                            variant="outline"
+                            className="hidden h-8 w-8 p-0 lg:flex"
+                            onClick={() => table.setPageIndex(0)}
+                            disabled={!table.getCanPreviousPage()}
+                        >
+                            <span className="sr-only">Première page</span>
+                            <ChevronsLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="h-8 w-8 p-0"
+                            onClick={() => table.previousPage()}
+                            disabled={!table.getCanPreviousPage()}
+                        >
+                            <span className="sr-only">Page précédente</span>
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="h-8 w-8 p-0"
+                            onClick={() => table.nextPage()}
+                            disabled={!table.getCanNextPage()}
+                        >
+                            <span className="sr-only">Page suivante</span>
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="hidden h-8 w-8 p-0 lg:flex"
+                            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                            disabled={!table.getCanNextPage()}
+                        >
+                            <span className="sr-only">Dernière page</span>
+                            <ChevronsRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            </div>
           </CardContent>
         </Card>
       </main>
     </div>
   );
 }
-
-    
