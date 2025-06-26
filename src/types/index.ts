@@ -32,8 +32,12 @@ export type Tariff = {
   id: string;
   service: string;
   category: string;
-  unit: string;
-  price: number;
+  populationMin?: number;
+  populationMax?: number;
+  priceFounder?: number;
+  priceUser?: number;
+  discountFounder?: number; // in %
+  notes?: string;
 };
 
 export type OperationalCost = {

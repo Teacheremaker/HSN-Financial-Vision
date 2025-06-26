@@ -30,17 +30,29 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Tariff } from "@/types";
+import { Label } from '@/components/ui/label';
 
 const initialTariffs: Tariff[] = [
-    { id: "T-G01", service: "GEOTER", category: "Droit d'entrée", unit: "forfait", price: 5000.00 },
-    { id: "T-G02", service: "GEOTER", category: "Abonnement annuel / habitant", unit: "habitant", price: 1.20 },
-    { id: "T-S01", service: "SPANC", category: "Droit d'entrée", unit: "forfait", price: 3000.00 },
-    { id: "T-S02", service: "SPANC", category: "Abonnement annuel / habitant", unit: "habitant", price: 0.80 },
-    { id: "T-R01", service: "ROUTE", category: "Contribution annuelle", unit: "km de voirie", price: 150.00 },
-    { id: "T-A01", service: "ADS", category: "Instruction de dossier", unit: "dossier", price: 100.00 },
+    // GEOTER
+    { id: 'T-G-01', service: 'GEOTER', category: 'Communes 0 à 250', populationMin: 0, populationMax: 250, priceUser: 150, discountFounder: 0 },
+    { id: 'T-G-02', service: 'GEOTER', category: 'Communes 251 à 500', populationMin: 251, populationMax: 500, priceUser: 450, discountFounder: 0 },
+    { id: 'T-G-03', service: 'GEOTER', category: 'Communes 501 à 750', populationMin: 501, populationMax: 750, priceUser: 550, discountFounder: 0 },
+    { id: 'T-G-04', service: 'GEOTER', category: 'Communes 751 à 1000', populationMin: 751, populationMax: 1000, priceUser: 700, discountFounder: 0 },
+    { id: 'T-G-05', service: 'GEOTER', category: 'Communes 1001 à 3000', populationMin: 1001, populationMax: 3000, priceUser: 750, discountFounder: 0 },
+    { id: 'T-G-06', service: 'GEOTER', category: 'Communes Supérieur à 3000', populationMin: 3001, populationMax: 20000, priceUser: 1800, discountFounder: 0 },
+    { id: 'T-G-07', service: 'GEOTER', category: 'syndicats ≤ 4 000 habitants', populationMin: 1, populationMax: 4000, priceUser: 700, discountFounder: 0 },
+    { id: 'T-G-08', service: 'GEOTER', category: 'syndicats de 4 001 à 10 000 habitants', populationMin: 4001, populationMax: 10000, priceUser: 180, discountFounder: 0 },
+    { id: 'T-G-09', service: 'GEOTER', category: 'syndicats > 10 000 habitants', populationMin: 10001, populationMax: 20000, priceUser: 4000, discountFounder: 0 },
+    { id: 'T-G-10', service: 'GEOTER', category: 'syndicats > 20 000 habitants', populationMin: 20001, populationMax: 40000, priceUser: 5000, discountFounder: 0 },
+    { id: 'T-G-11', service: 'GEOTER', category: 'Autre (SDSIS, OPH, ingenieurie70)', priceFounder: 5000, priceUser: 5000, notes: 'à définir' },
+    { id: 'T-G-12', service: 'GEOTER', category: 'Communauté de communes < 10 000 habitants', populationMin: 1, populationMax: 10000, priceFounder: 1000, priceUser: 1000, discountFounder: 100 },
+    { id: 'T-G-13', service: 'GEOTER', category: 'Communauté de communes de 10 001 à 20 000 habitants', populationMin: 10001, populationMax: 20000, priceFounder: 1800, priceUser: 1800, discountFounder: 100 },
+    { id: 'T-G-14', service: 'GEOTER', category: 'Communauté de communes > 20 000 habitants', populationMin: 20001, populationMax: 100000, priceFounder: 2500, priceUser: 2500, discountFounder: 100 },
+    { id: 'T-G-15', service: 'GEOTER', category: 'Communauté d\'agglo', populationMin: 0, populationMax: 100000, priceFounder: 5000, priceUser: 5000, discountFounder: 0 },
+    { id: 'T-G-16', service: 'GEOTER', category: 'Département', populationMin: 0, populationMax: 300000, priceFounder: 5000, priceUser: 5000, discountFounder: 100 },
 ];
 
-const services = [...new Set(initialTariffs.map(t => t.service))];
+const services = ["GEOTER", "SPANC", "ROUTE", "ADS"];
 
 export default function TariffsPage() {
     const [tariffs, setTariffs] = useState(initialTariffs);
@@ -60,9 +72,7 @@ export default function TariffsPage() {
         const newTariff: Tariff = {
             id: newId,
             service: activeTab,
-            category: "Nouvelle catégorie",
-            unit: "unité",
-            price: 0,
+            category: "Nouvelle strate/catégorie",
         };
         setTariffs(currentTariffs => [...currentTariffs, newTariff]);
         setEditingRowId(newId);
@@ -74,15 +84,23 @@ export default function TariffsPage() {
 
     const filteredTariffs = tariffs.filter(tariff => tariff.service === activeTab);
 
+    const renderPrice = (price?: number) => price?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? <span className="text-muted-foreground">-</span>;
+    const renderPopulation = (tariff: Tariff) => {
+        if (tariff.populationMin !== undefined && tariff.populationMax !== undefined) {
+            return `${tariff.populationMin.toLocaleString('fr-FR')} - ${tariff.populationMax.toLocaleString('fr-FR')}`;
+        }
+        return <span className="text-muted-foreground">-</span>;
+    }
+
   return (
     <div className="flex flex-col h-full">
         <Header 
-            title="Grille Tarifaire"
+            title="Grille Tarifaire Détaillée"
             actions={
                 <div className="flex items-center space-x-2">
                     <Button variant="outline" onClick={handleAddNew}>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Ajouter un Tarif
+                        Ajouter un tarif
                     </Button>
                     <Button onClick={() => alert('Sauvegarde globale à implémenter')}>
                         <Save className="mr-2 h-4 w-4" />
@@ -96,7 +114,7 @@ export default function TariffsPage() {
                 <CardHeader>
                     <CardTitle>Tarifs des Services</CardTitle>
                     <CardDescription>
-                        Naviguez entre les services pour voir et modifier les tarifs. Les prix sont en euros.
+                        Naviguez entre les services pour voir et modifier les grilles tarifaires. Les prix sont en euros HT.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -113,9 +131,12 @@ export default function TariffsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[40%]">Catégorie</TableHead>
-                                    <TableHead>Unité</TableHead>
-                                    <TableHead className="text-right w-[150px]">Prix (€)</TableHead>
+                                    <TableHead className="w-[30%]">Strate/Catégorie</TableHead>
+                                    <TableHead>Population</TableHead>
+                                    <TableHead className="text-right">Prix Fondateur (€)</TableHead>
+                                    <TableHead className="text-right">Prix Utilisateur (€)</TableHead>
+                                    <TableHead className="text-right">Remise Fond. (%)</TableHead>
+                                    <TableHead>Notes</TableHead>
                                     <TableHead><span className="sr-only">Actions</span></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -125,39 +146,27 @@ export default function TariffsPage() {
                                     return (
                                     <TableRow key={tariff.id}>
                                         <TableCell className="font-medium">
-                                            {isEditing ? (
-                                                <Input 
-                                                    value={tariff.category} 
-                                                    onChange={(e) => handleUpdate(tariff.id, 'category', e.target.value)}
-                                                    className="h-8"
-                                                />
-                                            ) : (
-                                                tariff.category
-                                            )}
+                                            {isEditing ? <Input value={tariff.category} onChange={(e) => handleUpdate(tariff.id, 'category', e.target.value)} className="h-8" /> : tariff.category}
                                         </TableCell>
                                         <TableCell>
                                             {isEditing ? (
-                                                <Input 
-                                                    value={tariff.unit} 
-                                                    onChange={(e) => handleUpdate(tariff.id, 'unit', e.target.value)}
-                                                    className="h-8"
-                                                />
-                                            ) : (
-                                                tariff.unit
-                                            )}
+                                                <div className="flex items-center gap-2">
+                                                    <Input type="number" placeholder="Min" value={tariff.populationMin ?? ''} onChange={e => handleUpdate(tariff.id, 'populationMin', e.target.value ? parseInt(e.target.value) : undefined)} className="h-8 w-24" />
+                                                    <Input type="number" placeholder="Max" value={tariff.populationMax ?? ''} onChange={e => handleUpdate(tariff.id, 'populationMax', e.target.value ? parseInt(e.target.value) : undefined)} className="h-8 w-24" />
+                                                </div>
+                                            ) : renderPopulation(tariff)}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            {isEditing ? (
-                                                <Input 
-                                                    type="number"
-                                                    value={tariff.price} 
-                                                    onChange={(e) => handleUpdate(tariff.id, 'price', parseFloat(e.target.value) || 0)}
-                                                    className="h-8 text-right"
-                                                    step="0.01"
-                                                />
-                                            ) : (
-                                                tariff.price.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                            )}
+                                            {isEditing ? <Input type="number" value={tariff.priceFounder ?? ''} onChange={e => handleUpdate(tariff.id, 'priceFounder', e.target.value ? parseFloat(e.target.value) : undefined)} className="h-8 text-right" /> : renderPrice(tariff.priceFounder)}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {isEditing ? <Input type="number" value={tariff.priceUser ?? ''} onChange={e => handleUpdate(tariff.id, 'priceUser', e.target.value ? parseFloat(e.target.value) : undefined)} className="h-8 text-right" /> : renderPrice(tariff.priceUser)}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {isEditing ? <Input type="number" value={tariff.discountFounder ?? ''} onChange={e => handleUpdate(tariff.id, 'discountFounder', e.target.value ? parseFloat(e.target.value) : undefined)} className="h-8 text-right" /> : (tariff.discountFounder !== undefined ? `${tariff.discountFounder}%` : <span className="text-muted-foreground">-</span>)}
+                                        </TableCell>
+                                        <TableCell>
+                                            {isEditing ? <Input value={tariff.notes ?? ''} onChange={(e) => handleUpdate(tariff.id, 'notes', e.target.value)} className="h-8" /> : tariff.notes}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {isEditing ? (
@@ -188,7 +197,7 @@ export default function TariffsPage() {
                                     </TableRow>
                                 )}) : (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-24 text-center">
+                                        <TableCell colSpan={7} className="h-24 text-center">
                                             Aucun tarif défini pour ce service.
                                         </TableCell>
                                     </TableRow>
