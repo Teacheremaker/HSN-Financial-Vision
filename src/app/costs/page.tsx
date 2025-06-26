@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PlusCircle, Save, MoreHorizontal, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { OperationalCost } from "@/types";
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 const services = ["GEOTER", "SPANC", "ROUTE", "ADS", "Global"];
 
@@ -80,9 +82,38 @@ const initialCosts: OperationalCost[] = [
 
 
 export default function CostsPage() {
-    const [costs, setCosts] = useState(initialCosts);
+    const { toast } = useToast();
+    const [costs, setCosts] = useState<OperationalCost[]>(initialCosts);
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('GEOTER');
+
+    useEffect(() => {
+        try {
+            const savedCosts = localStorage.getItem('hsn-operational-costs');
+            if (savedCosts) {
+                setCosts(JSON.parse(savedCosts));
+            }
+        } catch (error) {
+            console.error("Failed to parse costs from localStorage", error);
+        }
+    }, []);
+
+    const handleSaveChanges = () => {
+        try {
+            localStorage.setItem('hsn-operational-costs', JSON.stringify(costs));
+            toast({
+                title: "Sauvegarde réussie",
+                description: "Les coûts opérationnels ont été sauvegardés localement.",
+            });
+        } catch (error) {
+            console.error("Failed to save costs to localStorage", error);
+            toast({
+                variant: "destructive",
+                title: "Erreur de sauvegarde",
+                description: "Impossible de sauvegarder les modifications.",
+            });
+        }
+    };
 
     const handleUpdate = (id: string, field: keyof OperationalCost, value: any) => {
         setCosts(currentCosts => {
@@ -92,7 +123,6 @@ export default function CostsPage() {
 
             const changedCost = updatedCosts.find(c => c.id === id);
             
-            // If the changed cost is an investment, we need to find its corresponding amortization line and update it.
             if (changedCost?.category === 'À amortir') {
                 const investmentCost = changedCost;
                 const amortizationLine = updatedCosts.find(c => c.service === investmentCost.service && c.category === 'Amortissement');
@@ -155,7 +185,7 @@ export default function CostsPage() {
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Ajouter un Coût
                     </Button>
-                    <Button onClick={() => alert('Sauvegarde globale à implémenter')}>
+                    <Button onClick={handleSaveChanges}>
                         <Save className="mr-2 h-4 w-4" />
                         Sauvegarder les modifications
                     </Button>

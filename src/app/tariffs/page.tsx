@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PlusCircle, Save, MoreHorizontal, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Tariff } from "@/types";
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 const initialTariffs: Tariff[] = [
     // GEOTER
@@ -109,9 +110,38 @@ const initialTariffs: Tariff[] = [
 const services = ["GEOTER", "SPANC", "ROUTE", "ADS"];
 
 export default function TariffsPage() {
-    const [tariffs, setTariffs] = useState(initialTariffs);
+    const { toast } = useToast();
+    const [tariffs, setTariffs] = useState<Tariff[]>(initialTariffs);
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState(services[0] ?? "");
+
+    useEffect(() => {
+        try {
+            const savedTariffs = localStorage.getItem('hsn-tariffs');
+            if (savedTariffs) {
+                setTariffs(JSON.parse(savedTariffs));
+            }
+        } catch (error) {
+            console.error("Failed to parse tariffs from localStorage", error);
+        }
+    }, []);
+
+    const handleSaveChanges = () => {
+        try {
+            localStorage.setItem('hsn-tariffs', JSON.stringify(tariffs));
+            toast({
+                title: "Sauvegarde réussie",
+                description: "La grille tarifaire a été sauvegardée localement.",
+            });
+        } catch (error) {
+            console.error("Failed to save tariffs to localStorage", error);
+            toast({
+                variant: "destructive",
+                title: "Erreur de sauvegarde",
+                description: "Impossible de sauvegarder les modifications.",
+            });
+        }
+    };
 
     const handleUpdate = (id: string, field: keyof Tariff, value: any) => {
         setTariffs(currentTariffs =>
@@ -156,7 +186,7 @@ export default function TariffsPage() {
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Ajouter un tarif
                     </Button>
-                    <Button onClick={() => alert('Sauvegarde globale à implémenter')}>
+                    <Button onClick={handleSaveChanges}>
                         <Save className="mr-2 h-4 w-4" />
                         Sauvegarder les modifications
                     </Button>
