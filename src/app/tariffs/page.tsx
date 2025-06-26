@@ -86,6 +86,24 @@ const initialTariffs: Tariff[] = [
     { id: 'T-R-14', service: 'ROUTE', category: 'Communauté de communes > 20 000 habitants', populationMin: 20001, populationMax: 100000, priceFounder: 800, priceUser: 1200 },
     { id: 'T-R-15', service: 'ROUTE', category: 'Communauté d\'agglo', populationMin: 0, populationMax: 100000, priceFounder: 800, priceUser: 1200 },
     { id: 'T-R-16', service: 'ROUTE', category: 'Département', populationMin: 0, populationMax: 300000, priceFounder: 800, priceUser: 1200 },
+
+    // ADS
+    { id: 'T-A-01', service: 'ADS', category: 'Communes 0 à 250', populationMin: 0, populationMax: 250, priceUser: 100 },
+    { id: 'T-A-02', service: 'ADS', category: 'Communes 251 à 500', populationMin: 251, populationMax: 500, priceUser: 200 },
+    { id: 'T-A-03', service: 'ADS', category: 'Communes 501 à 750', populationMin: 501, populationMax: 750, priceUser: 400 },
+    { id: 'T-A-04', service: 'ADS', category: 'Communes 751 à 1000', populationMin: 751, populationMax: 1000, priceUser: 600 },
+    { id: 'T-A-05', service: 'ADS', category: 'Communes 1001 à 3000', populationMin: 1001, populationMax: 3000, priceUser: 800 },
+    { id: 'T-A-06', service: 'ADS', category: 'Communes Supérieur à 3000', populationMin: 3001, populationMax: 20000, priceFounder: 0, priceUser: 1000 },
+    { id: 'T-A-07', service: 'ADS', category: 'syndicats ≤ 4 000 habitants', populationMin: 1, populationMax: 4000, priceFounder: 3000, priceUser: 4000 },
+    { id: 'T-A-08', service: 'ADS', category: 'syndicats de 4 001 à 10 000 habitants', populationMin: 4001, populationMax: 10000, priceFounder: 3000, priceUser: 4000 },
+    { id: 'T-A-09', service: 'ADS', category: 'syndicats > à 10 000 habitants', populationMin: 10001, populationMax: 20000, priceFounder: 3000, priceUser: 4000 },
+    { id: 'T-A-10', service: 'ADS', category: 'syndicats > à 20 000 habitants', populationMin: 20001, populationMax: 40000, priceFounder: 3000, priceUser: 4000 },
+    { id: 'T-A-11', service: 'ADS', category: 'Autre (SDSIS,OPH, ingenieurie70)', priceFounder: 3000, priceUser: 4000 },
+    { id: 'T-A-12', service: 'ADS', category: 'Communauté de communes < 10 000 habitants', populationMin: 1, populationMax: 10000, priceFounder: 3000, priceUser: 4000 },
+    { id: 'T-A-13', service: 'ADS', category: 'Communauté de communes de 10 001 à 20 000 habitants', populationMin: 10001, populationMax: 20000, priceFounder: 3000, priceUser: 4000 },
+    { id: 'T-A-14', service: 'ADS', category: 'Communauté de communes > 20 000 habitants', populationMin: 20001, populationMax: 100000, priceFounder: 3000, priceUser: 4000 },
+    { id: 'T-A-15', service: 'ADS', category: 'Communauté d\'agglo', populationMin: 0, populationMax: 100000, priceFounder: 3000, priceUser: 4000 },
+    { id: 'T-A-16', service: 'ADS', category: 'Département', populationMin: 0, populationMax: 300000, priceFounder: 3000, priceUser: 4000 },
 ];
 
 const services = ["GEOTER", "SPANC", "ROUTE", "ADS"];
