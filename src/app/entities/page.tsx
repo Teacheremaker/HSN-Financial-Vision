@@ -302,6 +302,11 @@ export default function EntitiesPage() {
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  const yearsWithServices = React.useMemo(() => {
+    const allYears = entities.flatMap(entity => entity.services.map(service => service.year));
+    return [...new Set(allYears)].sort((a, b) => a - b);
+  }, [entities]);
+
   const handleExport = () => {
     const csvString = generateCsv(entities);
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
@@ -606,13 +611,19 @@ export default function EntitiesPage() {
                 className="w-full sm:w-auto sm:max-w-xs"
                 placeholder="Filtrer par service..."
               />
-              <Input
-                type="number"
-                placeholder="Filtrer par année..."
-                value={yearFilter}
-                onChange={(e) => setYearFilter(e.target.value)}
-                className="w-full sm:w-auto sm:max-w-[180px]"
-              />
+              <Select value={yearFilter} onValueChange={setYearFilter}>
+                <SelectTrigger className="w-full sm:w-auto sm:max-w-[180px]">
+                  <SelectValue placeholder="Filtrer par année..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Toutes les années</SelectItem>
+                  {yearsWithServices.map((year) => (
+                    <SelectItem key={year} value={String(year)}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="rounded-md border">
               <Table>
