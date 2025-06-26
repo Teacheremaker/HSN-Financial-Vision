@@ -13,13 +13,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useScenarioStore, type AdoptionRates, SERVICES, initialScenarioState, type Scenario } from "@/hooks/use-scenario-store";
+import { useScenarioStore, type AdoptionRates, SERVICES, initialScenarioState, type Scenario, type Service } from "@/hooks/use-scenario-store";
 import { Input } from "@/components/ui/input";
 import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useEntityStore } from "@/hooks/use-entity-store";
 import { useTariffStore } from "@/hooks/use-tariff-store";
 import { useCostStore } from "@/hooks/use-cost-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
+import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
 
 const ParameterSlider = ({
   label,
@@ -53,6 +54,7 @@ const ParameterSlider = ({
 
 const RoiCard = () => {
     const { scenario, startYear, endYear } = useScenarioStore();
+    const { selectedService } = useChartFilterStore();
     const { entities } = useEntityStore();
     const { tariffs } = useTariffStore();
     const { costs } = useCostStore();
@@ -62,14 +64,16 @@ const RoiCard = () => {
         const initialScenario = initialScenarioState;
         const operationalCosts = costs.filter((c) => c.category !== 'À amortir');
 
-        const calculateValues = (scenario: Scenario, year: number) => {
+        const calculateValues = (scenario: Scenario, year: number, serviceFilter: string) => {
             let revenue = 0;
             let cost = 0;
             
             // --- Revenue ---
             const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
             
-            SERVICES.forEach(service => {
+            const servicesToCalculate = serviceFilter === 'Tous les services' ? SERVICES : (SERVICES.includes(serviceFilter as any) ? [serviceFilter as Service] : []);
+
+            servicesToCalculate.forEach(service => {
                 let baseRevenue = 0;
                 let potentialRevenue = 0;
 
@@ -79,7 +83,7 @@ const RoiCard = () => {
                     const subscription = entity.services.find(s => s.name === service);
                     if (subscription && year >= subscription.year) {
                         baseRevenue += price;
-                    } else {
+                    } else if (!subscription) {
                         potentialRevenue += price;
                     }
                 });
@@ -96,8 +100,15 @@ const RoiCard = () => {
             // --- Cost ---
             const indexationRate = scenario.indexationRate / 100;
             const numYearsIndexed = year > startYear ? year - startYear : 0;
+
+            const relevantCosts = operationalCosts.filter((c) => {
+                if (serviceFilter === 'Tous les services') {
+                    return true;
+                }
+                return c.service === serviceFilter;
+            });
             
-            operationalCosts.forEach((c) => {
+            relevantCosts.forEach((c) => {
                 const costInflationFactor = (c.category === 'Fixe' || c.category === 'Variable') ? Math.pow(1 + indexationRate, numYearsIndexed) : 1;
                 
                 if (c.category === 'Amortissement') {
@@ -114,8 +125,8 @@ const RoiCard = () => {
             return { revenue, cost };
         }
 
-        const current = calculateValues(currentScenario, endYear);
-        const initial = calculateValues(initialScenario, endYear);
+        const current = calculateValues(currentScenario, endYear, selectedService);
+        const initial = calculateValues(initialScenario, endYear, selectedService);
         
         const newRoi = current.cost > 0 ? (current.revenue - current.cost) / current.cost * 100 : (current.revenue > 0 ? Infinity : 0);
         const baseRoiValue = initial.cost > 0 ? (initial.revenue - initial.cost) / initial.cost * 100 : (initial.revenue > 0 ? Infinity : 0);
@@ -131,18 +142,21 @@ const RoiCard = () => {
         const ChangeIcon = isGoodChange ? ArrowUpRight : ArrowDownRight;
         const changeColor = isGoodChange ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500';
 
+        const serviceName = selectedService === 'Tous les services' ? '' : ` ${selectedService}`;
+
         return {
             value: isFinite(newRoi) ? `${newRoi.toFixed(1)}%` : '∞',
             change: formatChange(roiChange),
             changeColor,
             ChangeIcon,
+            serviceName,
         };
-    }, [scenario, costs, entities, tariffs, startYear, endYear]);
+    }, [scenario, costs, entities, tariffs, startYear, endYear, selectedService]);
 
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">ROI Projeté ({endYear})</CardTitle>
+                <CardTitle className="text-sm font-medium">ROI Projeté{roiData.serviceName} ({endYear})</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
