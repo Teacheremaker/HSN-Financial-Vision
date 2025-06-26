@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { PlusCircle, Save, MoreHorizontal, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
@@ -42,41 +42,71 @@ import type { OperationalCost } from "@/types";
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useCostStore } from '@/hooks/use-cost-store';
+import { useScenarioStore } from '@/hooks/use-scenario-store';
+import { Slider } from '@/components/ui/slider';
+import { Separator } from '@/components/ui/separator';
+
 
 const services = ["GEOTER", "SPANC", "ROUTE", "ADS", "Global"];
 
 export default function CostsPage() {
     const { toast } = useToast();
     const { costs, updateCost, addCost, deleteCost } = useCostStore();
+    const { scenario, startYear, endYear, updateScenarioValue } = useScenarioStore();
+    
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('GEOTER');
+    const [selectedYear, setSelectedYear] = useState(startYear);
 
+    useEffect(() => {
+        if(selectedYear < startYear || selectedYear > endYear) {
+            setSelectedYear(startYear);
+        }
+    }, [startYear, endYear, selectedYear]);
+
+    const years = useMemo(() => {
+        if (startYear > endYear) return [];
+        return Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
+    }, [startYear, endYear]);
 
     const handleSaveChanges = () => {
-        // With Zustand, changes are saved automatically to the state.
-        // This function could be used for persisting to a backend if needed.
         toast({
             title: "Modifications enregistrées",
-            description: "Les coûts opérationnels ont été mis à jour dans l'état de l'application.",
+            description: "Les coûts opérationnels et les paramètres de scénario ont été mis à jour.",
         });
     };
 
     const handleUpdate = (id: string, field: keyof OperationalCost, value: any) => {
-        updateCost(id, field, value);
+        const originalCost = costs.find(c => c.id === id);
+        if (!originalCost) return;
 
+        let baseCostValue = value;
+        // If editing annual cost, we must back-calculate the base cost from the displayed (potentially indexed) value.
+        if (field === 'annualCost') {
+            const indexationFactor = Math.pow(1 + (scenario.indexationRate / 100), selectedYear > startYear ? selectedYear - startYear : 0);
+            if ((originalCost.category === 'Fixe' || originalCost.category === 'Variable') && selectedYear > startYear && indexationFactor > 0) {
+                baseCostValue = value / indexationFactor;
+            }
+        }
+        
+        updateCost(id, field, baseCostValue);
+
+        // Represent the cost *after* the update to pass to amortization logic, preventing state lag issues
+        const updatedCostData = { ...originalCost, [field]: baseCostValue };
+        
         // If the updated cost is an investment, recalculate the amortization
-        const changedCost = costs.find(c => c.id === id);
-        if (changedCost?.category === 'À amortir') {
-             const investmentCost = { ...changedCost, [field]: value };
-             const amortizationLine = costs.find(c => c.service === investmentCost.service && c.category === 'Amortissement');
+        if (updatedCostData.category === 'À amortir') {
+             const amortizationLine = costs.find(c => c.service === updatedCostData.service && c.category === 'Amortissement');
              if (amortizationLine) {
-                 const amountToAmortize = investmentCost.annualCost;
-                 const duration = investmentCost.amortizationDuration;
+                 const amountToAmortize = updatedCostData.annualCost;
+                 const duration = updatedCostData.amortizationDuration;
                  if (amountToAmortize > 0 && duration && duration > 0) {
                      const calculatedAmortization = amountToAmortize / duration;
                      updateCost(amortizationLine.id, 'annualCost', calculatedAmortization);
-                     updateCost(amortizationLine.id, 'amortizationStartYear', investmentCost.amortizationStartYear);
-                     updateCost(amortizationLine.id, 'amortizationDuration', investmentCost.amortizationDuration);
+                     updateCost(amortizationLine.id, 'amortizationStartYear', updatedCostData.amortizationStartYear);
+                     updateCost(amortizationLine.id, 'amortizationDuration', updatedCostData.amortizationDuration);
+                 } else {
+                     updateCost(amortizationLine.id, 'annualCost', 0);
                  }
              }
         }
@@ -96,10 +126,37 @@ export default function CostsPage() {
         setEditingRowId(newId);
     };
     
-    const filteredCosts = costs.filter(cost => cost.service === activeTab);
-    const totalAnnualCost = filteredCosts
+    const displayedCosts = useMemo(() => {
+        const indexationFactor = Math.pow(1 + (scenario.indexationRate / 100), selectedYear > startYear ? selectedYear - startYear : 0);
+        
+        return costs
+            .filter(cost => cost.service === activeTab)
+            .map(cost => {
+                let displayedAnnualCost = cost.annualCost;
+
+                if ((cost.category === 'Fixe' || cost.category === 'Variable')) {
+                    displayedAnnualCost *= indexationFactor;
+                }
+                
+                if (cost.category === 'Amortissement') {
+                    const start = cost.amortizationStartYear ?? 0;
+                    const duration = cost.amortizationDuration ?? 0;
+                    if (duration === 0 || selectedYear < start || selectedYear >= start + duration) {
+                        displayedAnnualCost = 0;
+                    }
+                }
+                
+                return {
+                    ...cost,
+                    displayedAnnualCost,
+                };
+            });
+    }, [costs, activeTab, selectedYear, scenario.indexationRate, startYear]);
+
+
+    const totalAnnualCost = displayedCosts
         .filter(cost => cost.category !== 'À amortir')
-        .reduce((sum, cost) => sum + (cost.annualCost || 0), 0);
+        .reduce((sum, cost) => sum + (cost.displayedAnnualCost || 0), 0);
 
   return (
     <div className="flex flex-col h-full">
@@ -123,10 +180,40 @@ export default function CostsPage() {
                 <CardHeader>
                     <CardTitle>Détail des Coûts par Service</CardTitle>
                     <CardDescription>
-                        Naviguez entre les services pour voir et modifier les coûts opérationnels associés.
+                        Naviguez entre les services et les années pour voir les coûts projetés.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
+                    <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">
+                        <div className="grid gap-2 w-full sm:w-auto">
+                            <Label htmlFor="year-select">Année d'affichage</Label>
+                            <Select value={String(selectedYear)} onValueChange={(val) => setSelectedYear(Number(val))}>
+                                <SelectTrigger id="year-select" className="w-full sm:w-[180px]">
+                                    <SelectValue placeholder="Choisir une année" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {years.map(year => (
+                                        <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2 w-full flex-1">
+                            <div className="flex justify-between items-center">
+                                <Label htmlFor="indexation-slider">Taux d'Indexation des Coûts</Label>
+                                <span className="text-sm font-medium">{scenario.indexationRate}%</span>
+                            </div>
+                            <Slider
+                                id="indexation-slider"
+                                value={[scenario.indexationRate]}
+                                onValueChange={(vals) => updateScenarioValue('indexationRate', vals[0])}
+                                max={20}
+                                step={0.5}
+                            />
+                        </div>
+                    </div>
+                    <Separator className="mb-6" />
+
                     <Tabs value={activeTab} onValueChange={(value) => { setEditingRowId(null); setActiveTab(value); }} className="w-full">
                         <TabsList>
                             {services.map((service) => (
@@ -142,14 +229,14 @@ export default function CostsPage() {
                                 <TableRow>
                                     <TableHead className="w-[30%]">Élément de Coût</TableHead>
                                     <TableHead>Catégorie</TableHead>
-                                    <TableHead>Coût Annuel (€)</TableHead>
+                                    <TableHead>Coût Annuel ({selectedYear})</TableHead>
                                     <TableHead>Amortissement</TableHead>
                                     <TableHead>Notes</TableHead>
                                     <TableHead><span className="sr-only">Actions</span></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredCosts.length > 0 ? filteredCosts.map((cost) => {
+                                {displayedCosts.length > 0 ? displayedCosts.map((cost) => {
                                     const isEditing = editingRowId === cost.id;
                                     return (
                                     <TableRow key={cost.id}>
@@ -187,14 +274,14 @@ export default function CostsPage() {
                                             {isEditing ? (
                                                 <Input 
                                                     type="number" 
-                                                    value={cost.annualCost} 
+                                                    value={cost.displayedAnnualCost} 
                                                     onChange={(e) => handleUpdate(cost.id, 'annualCost', parseFloat(e.target.value) || 0)}
                                                     className="h-8 text-right"
                                                     disabled={cost.category === 'Amortissement'}
                                                     title={cost.category === 'Amortissement' ? "Ce champ est calculé automatiquement" : ""}
                                                 />
                                             ) : (
-                                                cost.annualCost.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                                cost.displayedAnnualCost.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                             )}
                                         </TableCell>
                                         <TableCell>
