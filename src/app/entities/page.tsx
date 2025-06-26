@@ -611,12 +611,21 @@ export default function EntitiesPage() {
                 className="w-full sm:w-auto sm:max-w-xs"
                 placeholder="Filtrer par service..."
               />
-              <Select value={yearFilter} onValueChange={setYearFilter}>
+              <Select
+                value={yearFilter}
+                onValueChange={(value) => {
+                  if (value === "all") {
+                    setYearFilter("");
+                  } else {
+                    setYearFilter(value);
+                  }
+                }}
+              >
                 <SelectTrigger className="w-full sm:w-auto sm:max-w-[180px]">
                   <SelectValue placeholder="Filtrer par année..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Toutes les années</SelectItem>
+                  <SelectItem value="all">Toutes les années</SelectItem>
                   {yearsWithServices.map((year) => (
                     <SelectItem key={year} value={String(year)}>
                       {year}
