@@ -49,7 +49,6 @@ export default function RevenuesPage() {
 
             years.forEach(year => {
                 let baseRevenue = 0;
-                let potentialRevenue = 0;
                 let additionalRevenue = 0;
 
                 const servicesToCalculate = tab === 'Cumulé' ? SERVICES : [tab as Service];
@@ -63,8 +62,10 @@ export default function RevenuesPage() {
                         const price = getTariffPriceForEntity(entity, service, tariffs);
                         const subscription = entity.services.find(s => s.name === service);
     
-                        if (subscription && year >= subscription.year) {
-                            serviceBaseRevenue += price;
+                        if (subscription) {
+                             if (year >= subscription.year) {
+                                serviceBaseRevenue += price;
+                            }
                         } else {
                             servicePotentialRevenue += price;
                         }
@@ -75,7 +76,6 @@ export default function RevenuesPage() {
                     const serviceAdditionalRevenue = servicePotentialRevenue * (adoptionRatePercent / 100);
 
                     baseRevenue += serviceBaseRevenue;
-                    potentialRevenue += servicePotentialRevenue;
                     additionalRevenue += serviceAdditionalRevenue;
                 });
                 
