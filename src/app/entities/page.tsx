@@ -193,12 +193,130 @@ const EditableCell = ({ getValue, row, column, table }) => {
   }
 };
 
+const generateCsv = (data: Entity[]): string => {
+    const headers = ['id', 'nom', 'population', 'type', 'statut', 'services'];
+    const csvRows = [headers.join(',')];
+    const quote = (field: any) => `"${String(field).replace(/"/g, '""')}"`;
+
+    data.forEach(entity => {
+        const servicesString = entity.services.map(s => `${s.name}:${s.year}`).join(';');
+        const row = [
+            quote(entity.id),
+            quote(entity.nom),
+            quote(entity.population),
+            quote(entity.type),
+            quote(entity.statut),
+            quote(servicesString)
+        ].join(',');
+        csvRows.push(row);
+    });
+
+    return csvRows.join('\n');
+};
+
+const parseCsv = (csvText: string): Entity[] => {
+    const lines = csvText.trim().split('\n').filter(line => !line.startsWith('#') && line.trim() !== '');
+    const headerLine = lines.shift();
+    if (!headerLine) return [];
+
+    const headers = headerLine.split(',').map(h => h.trim());
+
+    return lines.map(line => {
+        const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+        
+        const rowData = headers.reduce((obj, header, index) => {
+            let value = (values[index] || '').trim();
+            if (value.startsWith('"') && value.endsWith('"')) {
+                value = value.substring(1, value.length - 1).replace(/""/g, '"');
+            }
+            obj[header as keyof Entity] = value as any;
+            return obj;
+        }, {} as Record<keyof Entity, any>);
+
+        const services: ServiceSubscription[] = (rowData.services || '')
+            .split(';')
+            .filter(Boolean)
+            .map((s: string) => {
+                const [name, year] = s.split(':');
+                return { name: name?.trim(), year: parseInt(year, 10) };
+            })
+            .filter((s: ServiceSubscription) => s.name && !isNaN(s.year));
+
+        return {
+            id: rowData.id || `ENT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            nom: rowData.nom || 'Sans Nom',
+            population: parseInt(rowData.population as any, 10) || 0,
+            type: rowData.type === 'Fondatrice' ? 'Fondatrice' : 'Utilisatrice',
+            statut: rowData.statut === 'Actif' ? 'Actif' : 'Inactif',
+            services: services,
+        };
+    });
+};
+
 
 export default function EntitiesPage() {
   const [data, setData] = React.useState(initialData);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [editingRowId, setEditingRowId] = React.useState<string | null>(null);
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleExport = () => {
+    const csvString = generateCsv(data);
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "entites.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportTemplate = () => {
+    const headers = "id,nom,population,type,statut,services";
+    const example = "# Séparez les services par un point-virgule (;) et le service de l'année par un deux-points (:). Exemple : \"GEOTER:2024;SPANC:2025\"";
+    const csvString = `${headers}\n${example}`;
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "trame_import_entites.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+  
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const text = e.target?.result as string;
+        if (text) {
+            try {
+                const newData = parseCsv(text);
+                setData(newData);
+                alert(`${newData.length} entités importées avec succès !`);
+            } catch (error) {
+                console.error("Erreur lors du parsage du CSV:", error);
+                alert("Le fichier CSV ne semble pas être au bon format.");
+            }
+        }
+    };
+    reader.readAsText(file, 'UTF-8');
+    if (event.target) {
+        event.target.value = '';
+    }
+  };
 
   const columns: ColumnDef<Entity>[] = React.useMemo(() => [
     {
@@ -333,19 +451,26 @@ export default function EntitiesPage() {
 
   return (
     <div className="flex flex-col h-full">
+        <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileImport}
+            accept=".csv"
+            style={{ display: 'none' }}
+        />
       <Header
         title="Gestion des Entités"
         actions={
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" onClick={() => alert('Fonctionnalité à implémenter')}>
+            <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" />
               Exporter
             </Button>
-            <Button variant="outline" size="sm" onClick={() => alert('Fonctionnalité à implémenter')}>
+            <Button variant="outline" size="sm" onClick={handleExportTemplate}>
               <FileText className="mr-2 h-4 w-4" />
               Exporter Trame
             </Button>
-            <Button variant="outline" size="sm" onClick={() => alert('Fonctionnalité à implémenter')}>
+            <Button variant="outline" size="sm" onClick={handleImportClick}>
               <Upload className="mr-2 h-4 w-4" />
               Importer
             </Button>
@@ -431,3 +556,5 @@ export default function EntitiesPage() {
     </div>
   );
 }
+
+    
