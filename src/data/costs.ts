@@ -29,10 +29,4 @@ export const initialCosts: OperationalCost[] = [
     { id: "C-A03", service: "ADS", costItem: "Coût maintenance outils HSN (TTC)", category: "Fixe", annualCost: 512.50, notes: "LIZMAP, FME, GTF" },
     { id: "C-A04", service: "ADS", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 6400, notes: "" },
     { id: "C-A05", service: "ADS", costItem: "Amortissement Annuel", category: "Amortissement", annualCost: 771, notes: "Sur coût de dév.", amortizationStartYear: 2025, amortizationDuration: 8 },
-
-    // --- Global ---
-    { id: "C-Gl01", service: "Global", costItem: "Salaires Direction & Admin", category: "Fixe", annualCost: 80000, notes: "Personnel non affecté à un service" },
-    { id: "C-Gl02", service: "Global", costItem: "Loyer des bureaux", category: "Fixe", annualCost: 25000, notes: "Siège social" },
-    { id: "C-Gl03", service: "Global", costItem: "Licences logicielles partagées", category: "Fixe", annualCost: 3000, notes: "CRM, ERP, etc." },
-    { id: "C-Gl04", service: "Global", costItem: "Services Publics (siège)", category: "Variable", annualCost: 2200, notes: "Électricité et eau du siège" },
 ];
