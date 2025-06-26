@@ -211,11 +211,11 @@ export default function CostsPage() {
                                             {isEditing && cost.category === 'Amortissement' ? (
                                                 <div className="flex items-center gap-2">
                                                     <div>
-                                                        <Label htmlFor={`start-year-${cost.id}`} className="sr-only">Début</Label>
+                                                        <Label htmlFor={`start-year-${cost.id}`} className="sr-only">Année de début</Label>
                                                         <Input 
                                                             id={`start-year-${cost.id}`}
                                                             type="number"
-                                                            placeholder="Début"
+                                                            placeholder="Année"
                                                             value={cost.amortizationStartYear ?? ''}
                                                             onChange={(e) => {
                                                                 const value = parseInt(e.target.value, 10);
@@ -225,11 +225,11 @@ export default function CostsPage() {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <Label htmlFor={`duration-${cost.id}`} className="sr-only">Durée</Label>
+                                                        <Label htmlFor={`duration-${cost.id}`} className="sr-only">Durée en années</Label>
                                                         <Input
                                                             id={`duration-${cost.id}`}
                                                             type="number"
-                                                            placeholder="Durée"
+                                                            placeholder="Durée (ans)"
                                                             value={cost.amortizationDuration ?? ''}
                                                             onChange={(e) => {
                                                                 const value = parseInt(e.target.value, 10);
