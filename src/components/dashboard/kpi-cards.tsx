@@ -15,6 +15,8 @@ import {
   initialScenarioState,
   SERVICES,
   type AdoptionRates,
+  type Scenario,
+  type Service,
 } from '@/hooks/use-scenario-store';
 import { useChartFilterStore } from '@/hooks/use-chart-filter-store';
 import { useEntityStore } from '@/hooks/use-entity-store';
@@ -57,115 +59,69 @@ export function KpiCards() {
     const operationalCosts = costs.filter((c) => c.category !== 'À amortir');
 
     const calculateAnnualValues = (
-      scenario: any,
+      scenario: Scenario,
       serviceFilter: string,
       year: number
     ) => {
       let revenue = 0;
       let cost = 0;
-      let adoptionRate = 0;
-      const adoptionRates: number[] = [];
+      const adoptionRatesForAvg: number[] = [];
 
-      // Revenue Calculation
-      const priceIncreaseFactor = Math.pow(
-        1 + scenario.priceIncrease / 100,
-        year > startYear ? year - startYear : 0
-      );
+      // --- Revenue ---
+      const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
+      const servicesForRevenue = serviceFilter === 'Tous les services' ? SERVICES : (SERVICES.includes(serviceFilter as any) ? [serviceFilter as Service] : []);
 
-      entities.forEach((entity) => {
-        if (entity.statut !== 'Actif') return;
-
-        entity.services.forEach((subscription) => {
-          const serviceName = subscription.name;
-          if (year >= subscription.year) {
-            if (
-              serviceFilter === 'Tous les services' ||
-              serviceFilter === serviceName
-            ) {
-              const price = getTariffPriceForEntity(entity, serviceName, tariffs);
-              revenue += price;
-            }
+      servicesForRevenue.forEach(service => {
+        let serviceRevenue = 0;
+        entities.forEach(entity => {
+          if (entity.statut !== 'Actif') return;
+          const subscription = entity.services.find(s => s.name === service);
+          if (subscription && year >= subscription.year) {
+            const price = getTariffPriceForEntity(entity, service, tariffs);
+            serviceRevenue += price;
           }
         });
-      });
 
-      // Apply global factors
-      const servicesToConsider =
-        serviceFilter === 'Tous les services'
-          ? SERVICES
-          : [serviceFilter];
-      let totalInitialAdoptionRate = 0;
-      let totalCurrentAdoptionRate = 0;
-      let revenueWithAdoption = 0;
-
-      if (serviceFilter === 'Tous les services') {
-        SERVICES.forEach((service) => {
-          const serviceKey = service as keyof AdoptionRates;
-          const initialAdoptionRate =
-            initialScenarioState[activeScenario].adoptionRates[serviceKey];
-          const currentAdoptionRate = scenario.adoptionRates[serviceKey];
-          adoptionRates.push(currentAdoptionRate);
-
-          const adoptionFactor =
-            initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
-
-          let serviceRevenue = 0;
-          entities.forEach((entity) => {
-            if (
-              entity.statut !== 'Actif' &&
-              year >= (entity.services.find((s) => s.name === service)?.year ?? Infinity)
-            ) {
-              serviceRevenue += getTariffPriceForEntity(entity, service, tariffs);
-            }
-          });
-          revenueWithAdoption += serviceRevenue * adoptionFactor;
-        });
-        revenue = revenueWithAdoption;
-      } else if (SERVICES.includes(serviceFilter as any)) {
-        const serviceKey = serviceFilter as keyof AdoptionRates;
-        const initialAdoptionRate =
-          initialScenarioState[activeScenario].adoptionRates[serviceKey];
+        const serviceKey = service as keyof AdoptionRates;
+        const initialAdoptionRate = initialScenarioState[activeScenario].adoptionRates[serviceKey];
         const currentAdoptionRate = scenario.adoptionRates[serviceKey];
-        adoptionRates.push(currentAdoptionRate);
-        const adoptionFactor =
-          initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
-        revenue *= adoptionFactor;
-      }
+        adoptionRatesForAvg.push(currentAdoptionRate);
+        const adoptionFactor = initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
+
+        revenue += serviceRevenue * adoptionFactor;
+      });
 
       revenue *= priceIncreaseFactor;
 
-      // Cost Calculation
+      // --- Cost ---
       const indexationRate = scenario.indexationRate / 100;
       const numYearsIndexed = year > startYear ? year - startYear : 0;
+      
       const relevantCosts = operationalCosts.filter((c) => {
         if (serviceFilter === 'Tous les services') {
-            return true;
+            return true; // Sum of all costs (GEOTER, SPANC, ..., and Global)
         }
-        return c.service === serviceFilter;
+        return c.service === serviceFilter; // Only costs for the selected service
       });
 
       relevantCosts.forEach((c) => {
-        const costInflationFactor =
-          c.category === 'Fixe' || c.category === 'Variable'
-            ? Math.pow(1 + indexationRate, numYearsIndexed)
-            : 1;
+        const costInflationFactor = (c.category === 'Fixe' || c.category === 'Variable') ? Math.pow(1 + indexationRate, numYearsIndexed) : 1;
+        
         if (c.category === 'Amortissement') {
-          const start = c.amortizationStartYear ?? 0;
-          const duration = c.amortizationDuration ?? 0;
-          if (duration > 0 && year >= start && year < start + duration) {
-            cost += c.annualCost;
-          }
+            const start = c.amortizationStartYear ?? 0;
+            const duration = c.amortizationDuration ?? 0;
+            if (duration > 0 && year >= start && year < start + duration) {
+                cost += c.annualCost;
+            }
         } else {
-          cost += c.annualCost * costInflationFactor;
+            cost += c.annualCost * costInflationFactor;
         }
       });
 
-      // Adoption Rate Calculation
+      // --- Adoption Rate ---
+      let adoptionRate = 0;
       if (serviceFilter === 'Tous les services') {
-        adoptionRate =
-          adoptionRates.length > 0
-            ? adoptionRates.reduce((a, b) => a + b, 0) / adoptionRates.length
-            : 0;
+        adoptionRate = adoptionRatesForAvg.length > 0 ? adoptionRatesForAvg.reduce((a, b) => a + b, 0) / adoptionRatesForAvg.length : 0;
       } else if (SERVICES.includes(serviceFilter as any)) {
         adoptionRate = scenario.adoptionRates[serviceFilter as keyof AdoptionRates] ?? 0;
       }
