@@ -41,7 +41,7 @@ const KpiCard = ({ kpi }: { kpi: KpiData }) => {
         <div className="text-2xl font-bold">{kpi.value}</div>
         <p className={`text-xs ${changeColor} flex items-center`}>
           <ChangeIcon className="h-3 w-3 mr-1" />
-          {kpi.change} depuis le scénario initial
+          {kpi.change}
         </p>
       </CardContent>
     </Card>
@@ -65,7 +65,6 @@ export function KpiCards() {
     ) => {
       let revenue = 0;
       let cost = 0;
-      const adoptionRatesForAvg: number[] = [];
 
       // --- Revenue ---
       const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
@@ -92,8 +91,6 @@ export function KpiCards() {
         const additionalRevenue = potentialRevenue * (adoptionRatePercent / 100);
 
         revenue += baseRevenue + additionalRevenue;
-        
-        adoptionRatesForAvg.push(adoptionRatePercent);
       });
 
       revenue *= priceIncreaseFactor;
@@ -106,7 +103,6 @@ export function KpiCards() {
         if (serviceFilter === 'Tous les services') {
             return true;
         }
-        // For a specific service, include ONLY its direct costs.
         return c.service === serviceFilter;
       });
 
@@ -124,16 +120,23 @@ export function KpiCards() {
         }
       });
 
-      // --- Adoption Rate ---
-      let adoptionRate = 0;
-      if (serviceFilter === 'Tous les services') {
-        adoptionRate = adoptionRatesForAvg.length > 0 ? adoptionRatesForAvg.reduce((a, b) => a + b, 0) / adoptionRatesForAvg.length : 0;
-      } else if (SERVICES.includes(serviceFilter as any)) {
-        adoptionRate = scenario.adoptionRates[serviceFilter as keyof AdoptionRates] ?? 0;
-      }
-
-      return { revenue, cost, adoptionRate };
+      return { revenue, cost };
     };
+    
+    const calculateSubscriptionRate = (year: number, serviceFilter: string): number => {
+        const totalEntities = entities.length;
+        if (totalEntities === 0) return 0;
+
+        let subscribedEntitiesCount = 0;
+        if (serviceFilter === 'Tous les services') {
+            subscribedEntitiesCount = entities.filter(e => e.services.some(s => s.year <= year)).length;
+        } else {
+            subscribedEntitiesCount = entities.filter(e => e.services.some(s => s.name === serviceFilter && s.year <= year)).length;
+        }
+
+        return (subscribedEntitiesCount / totalEntities) * 100;
+    };
+
 
     const currentValues = calculateAnnualValues(
       scenario,
@@ -152,27 +155,26 @@ export function KpiCards() {
         : currentValues.revenue > 0
         ? 100
         : 0;
+    const revenueChangeText = `${revenueChange >= 0 ? '+' : ''}${revenueChange.toFixed(1)}% depuis le scénario initial`;
+
     const costChange =
       initialValues.cost > 0
         ? (currentValues.cost / initialValues.cost - 1) * 100
         : currentValues.cost > 0
         ? 100
         : 0;
-    const adoptionChange =
-      initialValues.adoptionRate > 0
-        ? (currentValues.adoptionRate / initialValues.adoptionRate - 1) * 100
-        : currentValues.adoptionRate > 0
-        ? 100
-        : 0;
+    const costChangeText = `${costChange >= 0 ? '+' : ''}${costChange.toFixed(1)}% depuis le scénario initial`;
 
-    const formatChange = (val: number) =>
-      `${val >= 0 ? '+' : ''}${val.toFixed(1)}%`;
+    const currentSubscriptionRate = calculateSubscriptionRate(endYear, selectedService);
+    const initialSubscriptionRate = calculateSubscriptionRate(startYear, selectedService);
+    const subscriptionChange = currentSubscriptionRate - initialSubscriptionRate;
+    const subscriptionChangeText = `${subscriptionChange >= 0 ? '+' : ''}${subscriptionChange.toFixed(1)} pts depuis ${startYear}`;
 
     const serviceName =
       selectedService === 'Tous les services' ? '' : ` ${selectedService}`;
     const adoptionTitle =
       selectedService === 'Tous les services'
-        ? "Taux d'Adoption (Moy.)"
+        ? "Taux d'Adoption (Global)"
         : `Taux d'Adoption ${selectedService}`;
 
     const kpis = [
@@ -182,17 +184,17 @@ export function KpiCards() {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })}`,
-        change: formatChange(revenueChange),
+        change: revenueChangeText,
         changeType:
           currentValues.revenue >= initialValues.revenue ? 'increase' : 'decrease',
         icon: DollarSign,
       },
       {
         name: adoptionTitle,
-        value: `${currentValues.adoptionRate.toFixed(0)}%`,
-        change: formatChange(adoptionChange),
+        value: `${currentSubscriptionRate.toFixed(0)}%`,
+        change: subscriptionChangeText,
         changeType:
-          currentValues.adoptionRate >= initialValues.adoptionRate
+          subscriptionChange >= 0
             ? 'increase'
             : 'decrease',
         icon: Users,
@@ -203,7 +205,7 @@ export function KpiCards() {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })}`,
-        change: formatChange(costChange),
+        change: costChangeText,
         changeType: currentValues.cost <= initialValues.cost ? 'increase' : 'decrease', // Lower cost is good
         icon: ArrowDownRight,
       },
