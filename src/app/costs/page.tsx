@@ -45,28 +45,28 @@ const services = ["GEOTER", "SPANC", "ROUTE", "ADS", "Global"];
 
 const initialCosts: OperationalCost[] = [
     // --- GEOTER ---
-    { id: "C-G01", service: "GEOTER", costItem: "Coût de développement SIG (HT)", category: "Amortissement", annualCost: 69500, notes: "Investissement initial" },
+    { id: "C-G01", service: "GEOTER", costItem: "Coût de développement SIG (HT)", category: "À amortir", annualCost: 69500, notes: "Investissement initial" },
     { id: "C-G02", service: "GEOTER", costItem: "Coût maintenance annuelle SIG (TTC)", category: "Fixe", annualCost: 13471, notes: "" },
     { id: "C-G03", service: "GEOTER", costItem: "Coût maintenance outils HSN (TTC)", category: "Fixe", annualCost: 2562.5, notes: "LIZMAP, FME, GTF" },
     { id: "C-G04", service: "GEOTER", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 64000, notes: "" },
     { id: "C-G05", service: "GEOTER", costItem: "Amortissement Annuel", category: "Amortissement", annualCost: 8687.50, notes: "Sur coût de dév.", amortizationStartYear: 2025, amortizationDuration: 8 },
 
     // --- SPANC ---
-    { id: "C-S01", service: "SPANC", costItem: "Coût développement Applicatif", category: "Amortissement", annualCost: 15700, notes: "Investissement initial" },
+    { id: "C-S01", service: "SPANC", costItem: "Coût développement Applicatif", category: "À amortir", annualCost: 15700, notes: "Investissement initial" },
     { id: "C-S02", service: "SPANC", costItem: "Coût maintenance annuelle applicatif", category: "Fixe", annualCost: 5280, notes: "" },
     { id: "C-S03", service: "SPANC", costItem: "Coût maintenance outils HSN (LIZMAP, FME, GTF)", category: "Fixe", annualCost: 512.50, notes: "" },
     { id: "C-S04", service: "SPANC", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 6400, notes: "" },
     { id: "C-S05", service: "SPANC", costItem: "Amortissement Annuel", category: "Amortissement", annualCost: 1962.50, notes: "Sur coût de dév.", amortizationStartYear: 2025, amortizationDuration: 8 },
 
     // --- ROUTE ---
-    { id: "C-R01", service: "ROUTE", costItem: "Coût de développement (HT)", category: "Amortissement", annualCost: 60598, notes: "Investissement initial" },
+    { id: "C-R01", service: "ROUTE", costItem: "Coût de développement (HT)", category: "À amortir", annualCost: 60598, notes: "Investissement initial" },
     { id: "C-R02", service: "ROUTE", costItem: "Coût maintenance annuelle (TTC)", category: "Fixe", annualCost: 5280, notes: "" },
     { id: "C-R03", service: "ROUTE", costItem: "Coût maintenance outils HSN (TTC)", category: "Fixe", annualCost: 512.50, notes: "LIZMAP, FME, GTF" },
     { id: "C-R04", service: "ROUTE", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 6400, notes: "" },
     { id: "C-R05", service: "ROUTE", costItem: "Amortissement Annuel", category: "Amortissement", annualCost: 7574.75, notes: "Sur coût de dév.", amortizationStartYear: 2025, amortizationDuration: 8 },
 
     // --- ADS ---
-    { id: "C-A01", service: "ADS", costItem: "Coût de développement (HT)", category: "Amortissement", annualCost: 6168, notes: "Investissement initial" },
+    { id: "C-A01", service: "ADS", costItem: "Coût de développement (HT)", category: "À amortir", annualCost: 6168, notes: "Investissement initial" },
     { id: "C-A02", service: "ADS", costItem: "Coût maintenance annuelle (TTC)", category: "Fixe", annualCost: 1000, notes: "" },
     { id: "C-A03", service: "ADS", costItem: "Coût maintenance outils HSN (TTC)", category: "Fixe", annualCost: 512.50, notes: "LIZMAP, FME, GTF" },
     { id: "C-A04", service: "ADS", costItem: "Charges de personnel (SN)", category: "Fixe", annualCost: 6400, notes: "" },
@@ -113,8 +113,8 @@ export default function CostsPage() {
     
     const filteredCosts = costs.filter(cost => cost.service === activeTab);
     const totalAnnualCost = filteredCosts
-        .filter(cost => cost.category !== 'Amortissement')
-        .reduce((sum, cost) => sum + cost.annualCost, 0);
+        .filter(cost => cost.category !== 'À amortir')
+        .reduce((sum, cost) => sum + (cost.annualCost || 0), 0);
 
   return (
     <div className="flex flex-col h-full">
@@ -189,10 +189,13 @@ export default function CostsPage() {
                                                         <SelectItem value="Fixe">Fixe</SelectItem>
                                                         <SelectItem value="Variable">Variable</SelectItem>
                                                         <SelectItem value="Amortissement">Amortissement</SelectItem>
+                                                        <SelectItem value="À amortir">À amortir</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             ) : (
-                                                <Badge variant={cost.category === 'Fixe' ? 'secondary' : (cost.category === 'Amortissement' ? 'default' : 'outline')}>{cost.category}</Badge>
+                                                <Badge variant={cost.category === 'À amortir' ? 'default' : (cost.category === 'Variable' ? 'outline' : 'secondary')}>
+                                                    {cost.category}
+                                                </Badge>
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">
@@ -208,7 +211,7 @@ export default function CostsPage() {
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            {isEditing && cost.category === 'Amortissement' ? (
+                                            {isEditing && (cost.category === 'Amortissement' || cost.category === 'À amortir') ? (
                                                 <div className="flex items-center gap-2">
                                                     <div>
                                                         <Label htmlFor={`start-year-${cost.id}`} className="sr-only">Année de début</Label>
