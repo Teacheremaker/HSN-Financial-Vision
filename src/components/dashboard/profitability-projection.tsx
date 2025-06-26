@@ -212,6 +212,8 @@ export function ProfitabilityProjection() {
                 <Legend />
                 <ReferenceLine yAxisId="left" y={0} stroke="#dc2626" strokeDasharray="3 3" label={{ value: "Seuil de rentabilité", position: 'insideBottomLeft' }} />
                 
+                <Bar yAxisId="right" dataKey="population" name="Population" fill={chartConfig.population.color} barSize={20} />
+                
                 {!isComparativeMode && (
                     <>
                         <Line yAxisId="left" type="monotone" dataKey="recettes" name="Recettes" stroke={chartConfig.recettes.color} strokeWidth={2} dot={false} />
@@ -224,8 +226,6 @@ export function ProfitabilityProjection() {
                         <Line key={s.id} yAxisId="left" type="monotone" dataKey={`recettes_${s.id}`} name={chartConfig[s.id as keyof typeof chartConfig].label} stroke={chartConfig[s.id as keyof typeof chartConfig].color} strokeWidth={2} dot={false}/>
                     ))
                 )}
-                
-                <Bar yAxisId="right" dataKey="population" name="Population" fill={chartConfig.population.color} barSize={20} />
             </ComposedChart>
         </ChartContainer>
 
