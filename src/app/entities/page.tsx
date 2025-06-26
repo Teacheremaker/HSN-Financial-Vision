@@ -297,7 +297,7 @@ export default function EntitiesPage() {
     pageIndex: 0,
     pageSize: 10,
   });
-  const [serviceFilter, setServiceFilter] = React.useState<string[]>([]);
+  const [serviceFilter, setServiceFilter] = React.useState<string>('');
   const [yearFilter, setYearFilter] = React.useState<string>('');
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -541,9 +541,10 @@ export default function EntitiesPage() {
 
   React.useEffect(() => {
     const yearAsNumber = yearFilter ? parseInt(yearFilter, 10) : null;
+    const servicesForFilter = serviceFilter ? [serviceFilter] : [];
     
     const filterValue = {
-        services: serviceFilter,
+        services: servicesForFilter,
         year: (yearAsNumber && !isNaN(yearAsNumber)) ? yearAsNumber : null,
     };
 
@@ -604,13 +605,28 @@ export default function EntitiesPage() {
                 }
                 className="w-full sm:w-auto sm:max-w-sm"
               />
-               <MultiSelect
-                options={SERVICE_OPTIONS}
-                selected={serviceFilter}
-                onChange={setServiceFilter}
-                className="w-full sm:w-auto sm:max-w-xs"
-                placeholder="Filtrer par service..."
-              />
+               <Select
+                value={serviceFilter}
+                onValueChange={(value) => {
+                  if (value === "all") {
+                    setServiceFilter("");
+                  } else {
+                    setServiceFilter(value);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full sm:w-auto sm:max-w-xs">
+                  <SelectValue placeholder="Filtrer par service..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les services</SelectItem>
+                  {SERVICE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select
                 value={yearFilter}
                 onValueChange={(value) => {
