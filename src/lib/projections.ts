@@ -35,10 +35,13 @@ export function getTariffPriceForEntity(entity: Entity, serviceName: string, all
     let price: number | undefined;
 
     if (entity.type === 'Fondatrice') {
-        price = matchedTariff.priceFounder;
-        if (price === undefined && matchedTariff.priceUser !== undefined) {
-            const discount = matchedTariff.discountFounder ?? 0;
-            price = matchedTariff.priceUser * (1 - discount / 100);
+        // If discountFounder is specified, it should be applied to priceUser.
+        // This is the primary logic for founders as per the business rule.
+        if (matchedTariff.discountFounder !== undefined && matchedTariff.priceUser !== undefined) {
+            price = matchedTariff.priceUser * (1 - matchedTariff.discountFounder / 100);
+        } else {
+            // Fallback to using priceFounder directly if no discount is specified.
+            price = matchedTariff.priceFounder;
         }
     } else { // Utilisatrice
         price = matchedTariff.priceUser;
