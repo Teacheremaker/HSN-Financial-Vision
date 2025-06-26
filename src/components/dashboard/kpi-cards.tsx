@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo } from "react";
 import { ArrowDownRight, ArrowUpRight, DollarSign, Users } from "lucide-react";
 import {
   Card,
@@ -9,11 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { KpiData, OperationalCost, Scenario } from "@/types";
-import { useScenarioStore, initialScenarioState, SERVICES, type AdoptionRates, type Scenarios } from "@/hooks/use-scenario-store";
+import type { KpiData, Entity, Tariff, OperationalCost } from "@/types";
+import { useScenarioStore, initialScenarioState, SERVICES, type AdoptionRates } from "@/hooks/use-scenario-store";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
-import { initialCosts } from "@/data/costs";
-import { serviceProjectionData } from "@/data/projections";
+import { useEntityStore } from "@/hooks/use-entity-store";
+import { useTariffStore } from "@/hooks/use-tariff-store";
+import { useCostStore } from "@/hooks/use-cost-store";
+import { getTariffPriceForEntity } from "@/lib/projections";
 
 const KpiCard = ({ kpi }: { kpi: KpiData }) => {
   const isGoodChange = kpi.changeType === 'increase';
@@ -37,26 +39,15 @@ const KpiCard = ({ kpi }: { kpi: KpiData }) => {
   );
 };
 
-
 export function KpiCards() {
     const { scenarios, activeScenario, startYear } = useScenarioStore();
     const { selectedService } = useChartFilterStore();
-    const [costs, setCosts] = useState<OperationalCost[]>(initialCosts);
-
-    useEffect(() => {
-        try {
-            const savedCosts = localStorage.getItem('hsn-operational-costs');
-            if (savedCosts) {
-                setCosts(JSON.parse(savedCosts));
-            }
-        } catch (error) {
-            console.error("Failed to parse costs from localStorage", error);
-        }
-    }, []);
-
+    const { entities } = useEntityStore();
+    const { tariffs } = useTariffStore();
+    const { costs } = useCostStore();
 
     const dynamicKpiData = useMemo(() => {
-        const calculateAnnualValues = (scenario: Scenario, serviceFilter: string, year: number) => {
+        const calculateAnnualValues = (scenario, serviceFilter: string, year: number) => {
             let revenue = 0;
             let cost = 0;
             let adoptionRate = 0;
@@ -64,41 +55,76 @@ export function KpiCards() {
 
             // Revenue Calculation
             const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
-            const servicesToProject = serviceFilter === "Tous les services"
-                ? SERVICES
-                : (SERVICES.includes(serviceFilter as any) ? [serviceFilter] : []);
+            
+            entities.forEach(entity => {
+                if (entity.statut !== 'Actif') return;
 
-            for (const service of servicesToProject) {
-                const serviceDataForYear = serviceProjectionData.find(d => d.year === year && d.service === service);
-                if (!serviceDataForYear) continue;
+                entity.services.forEach(subscription => {
+                    const serviceName = subscription.name;
+                    if (year >= subscription.year) {
+                        if (serviceFilter === "Tous les services" || serviceFilter === serviceName) {
+                            const price = getTariffPriceForEntity(entity, serviceName, tariffs);
+                            revenue += price;
+                        }
+                    }
+                });
+            });
 
-                const serviceKey = service as keyof AdoptionRates;
-                const baseAdoptionRate = initialScenarioState[activeScenario].adoptionRates[serviceKey];
-                const currentAdoptionRate = scenario.adoptionRates[serviceKey];
-                const adoptionFactor = baseAdoptionRate > 0 ? currentAdoptionRate / baseAdoptionRate : 1;
-                
-                revenue += (serviceDataForYear[activeScenario] * 1000) * adoptionFactor;
-                adoptionRates.push(scenario.adoptionRates[serviceKey]);
+            // Apply global factors
+            const servicesToConsider = serviceFilter === "Tous les services" ? SERVICES : [serviceFilter];
+            let totalInitialAdoptionRate = 0;
+            let totalCurrentAdoptionRate = 0;
+            let revenueWithAdoption = 0;
+
+            if (serviceFilter === 'Tous les services') {
+                 SERVICES.forEach(service => {
+                    const serviceKey = service as keyof AdoptionRates;
+                    const initialAdoptionRate = initialScenarioState[activeScenario].adoptionRates[serviceKey];
+                    const currentAdoptionRate = scenario.adoptionRates[serviceKey];
+                    adoptionRates.push(currentAdoptionRate);
+
+                    const adoptionFactor = initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
+                    
+                    let serviceRevenue = 0;
+                    entities.forEach(entity => {
+                        if (entity.statut !== 'Actif' && year >= (entity.services.find(s=>s.name === service)?.year ?? Infinity) ) {
+                            serviceRevenue += getTariffPriceForEntity(entity, service, tariffs);
+                        }
+                    });
+                    revenueWithAdoption += serviceRevenue * adoptionFactor;
+                });
+                revenue = revenueWithAdoption;
+            } else if (SERVICES.includes(serviceFilter as any)) {
+                 const serviceKey = serviceFilter as keyof AdoptionRates;
+                 const initialAdoptionRate = initialScenarioState[activeScenario].adoptionRates[serviceKey];
+                 const currentAdoptionRate = scenario.adoptionRates[serviceKey];
+                 adoptionRates.push(currentAdoptionRate);
+                 const adoptionFactor = initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
+                 revenue *= adoptionFactor;
             }
+            
             revenue *= priceIncreaseFactor;
             
             // Cost Calculation
             const indexationRate = scenario.indexationRate / 100;
             const numYearsIndexed = year > startYear ? year - startYear : 0;
             const relevantCosts = costs.filter(c => {
-                if (serviceFilter === 'Tous les services') return true;
+                if (serviceFilter === 'Tous les services') return c.service !== 'Global';
                 return c.service === serviceFilter;
             });
+            const globalCosts = costs.filter(c => c.service === 'Global');
 
-            relevantCosts.forEach(c => {
-                if (c.category === 'Fixe' || c.category === 'Variable') {
-                    cost += c.annualCost * Math.pow(1 + indexationRate, numYearsIndexed);
-                } else if (c.category === 'Amortissement') {
+
+            [...relevantCosts, ...globalCosts].forEach(c => {
+                const costInflationFactor = (c.category === 'Fixe' || c.category === 'Variable') ? Math.pow(1 + indexationRate, numYearsIndexed) : 1;
+                if (c.category === 'Amortissement') {
                     const start = c.amortizationStartYear ?? 0;
                     const duration = c.amortizationDuration ?? 0;
                     if (duration > 0 && year >= start && year < start + duration) {
                         cost += c.annualCost;
                     }
+                } else {
+                     cost += c.annualCost * costInflationFactor;
                 }
             });
 
@@ -115,9 +141,9 @@ export function KpiCards() {
         const currentValues = calculateAnnualValues(scenarios[activeScenario], selectedService, startYear);
         const initialValues = calculateAnnualValues(initialScenarioState[activeScenario], selectedService, startYear);
         
-        const revenueChange = initialValues.revenue > 0 ? ((currentValues.revenue / initialValues.revenue) - 1) * 100 : 0;
-        const costChange = initialValues.cost > 0 ? ((currentValues.cost / initialValues.cost) - 1) * 100 : 0;
-        const adoptionChange = initialValues.adoptionRate > 0 ? ((currentValues.adoptionRate / initialValues.adoptionRate) - 1) * 100 : 0;
+        const revenueChange = initialValues.revenue > 0 ? ((currentValues.revenue / initialValues.revenue) - 1) * 100 : (currentValues.revenue > 0 ? 100 : 0);
+        const costChange = initialValues.cost > 0 ? ((currentValues.cost / initialValues.cost) - 1) * 100 : (currentValues.cost > 0 ? 100 : 0);
+        const adoptionChange = initialValues.adoptionRate > 0 ? ((currentValues.adoptionRate / initialValues.adoptionRate) - 1) * 100 : (currentValues.adoptionRate > 0 ? 100: 0);
         
         const formatChange = (val: number) => `${val >= 0 ? '+' : ''}${val.toFixed(1)}%`;
         
@@ -150,7 +176,7 @@ export function KpiCards() {
 
         return kpis;
 
-    }, [scenarios, activeScenario, selectedService, costs, startYear]);
+    }, [scenarios, activeScenario, selectedService, costs, startYear, entities, tariffs]);
 
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

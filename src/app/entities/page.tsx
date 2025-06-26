@@ -66,31 +66,8 @@ import {
 } from '@/components/ui/select';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 import { Label } from '@/components/ui/label';
-
-const initialData: Entity[] = [
-    { id: 'ENT-001', nom: 'Ville de Metropolia', population: 50000, type: 'Fondatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2022}, {name: 'SPANC', year: 2023}]},
-    { id: 'ENT-002', nom: 'Ville de Silverlake', population: 25000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2023}] },
-    { id: 'ENT-003', nom: 'Village d\'Oakhaven', population: 5000, type: 'Utilisatrice', statut: 'Inactif', services: [] },
-    { id: 'ENT-004', nom: 'Arrondissement d\'Ironwood', population: 120000, type: 'Fondatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2022}, {name: 'SPANC', year: 2022}, {name: 'ROUTE', year: 2024}] },
-    { id: 'ENT-005', nom: 'Municipalité de Sunfield', population: 12000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'SPANC', year: 2024}, {name: 'ADS', year: 2025}] },
-    { id: 'ENT-006', nom: 'Ville de Redwood', population: 35000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2024}]},
-    { id: 'ENT-007', nom: 'Bourg de Greenfield', population: 8000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'ROUTE', year: 2025}]},
-    { id: 'ENT-008', nom: 'Ville de Starfall', population: 62000, type: 'Fondatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2022}, {name: 'ADS', year: 2023}]},
-    { id: 'ENT-009', nom: 'Hameau de Whisperwind', population: 1200, type: 'Utilisatrice', statut: 'Inactif', services: []},
-    { id: 'ENT-010', nom: 'Cité de Crystalcreek', population: 95000, type: 'Fondatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2022}, {name: 'SPANC', year: 2023}, {name: 'ROUTE', year: 2024}, {name: 'ADS', year: 2025}]},
-    { id: 'ENT-011', nom: 'Comté de Stonefield', population: 15000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'SPANC', year: 2024}]},
-    { id: 'ENT-012', nom: 'Ville de Moonshadow', population: 22000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2023}, {name: 'ADS', year: 2024}]},
-    { id: 'ENT-013', nom: 'Village de Riverbend', population: 3000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'ROUTE', year: 2024}]},
-    { id: 'ENT-014', nom: 'Ville de Emberfall', population: 48000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2024}]},
-    { id: 'ENT-015', nom: 'Paroisse de Summerisle', population: 18000, type: 'Utilisatrice', statut: 'Inactif', services: []},
-];
-
-const SERVICE_OPTIONS: MultiSelectOption[] = [
-  { value: "GEOTER", label: "GEOTER" },
-  { value: "SPANC", label: "SPANC" },
-  { value: "ROUTE", label: "ROUTE" },
-  { value: "ADS", label: "ADS" },
-];
+import { useEntityStore } from '@/hooks/use-entity-store';
+import { SERVICE_OPTIONS } from '@/data/entities';
 
 const EditableCell = ({ getValue, row, column, table }) => {
   const initialValue = getValue();
@@ -287,7 +264,7 @@ const parseCsv = (csvText: string): Entity[] => {
 
 
 export default function EntitiesPage() {
-  const [data, setData] = React.useState(initialData);
+  const { entities, setEntities, updateEntity, deleteEntity, addEntity } = useEntityStore();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [editingRowId, setEditingRowId] = React.useState<string | null>(null);
@@ -300,7 +277,7 @@ export default function EntitiesPage() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
-    const csvString = generateCsv(data);
+    const csvString = generateCsv(entities);
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -341,7 +318,7 @@ export default function EntitiesPage() {
         if (text) {
             try {
                 const newData = parseCsv(text);
-                setData(newData);
+                setEntities(newData);
                 alert(`${newData.length} entités importées avec succès !`);
             } catch (error) {
                 console.error("Erreur lors du parsage du CSV:", error);
@@ -354,6 +331,19 @@ export default function EntitiesPage() {
         event.target.value = '';
     }
   };
+
+  const handleAddRow = () => {
+    const newId = `ENT-${Date.now()}`;
+    addEntity({
+      id: newId,
+      nom: "Nouvelle collectivité",
+      population: 0,
+      type: "Utilisatrice",
+      statut: "Inactif",
+      services: [],
+    });
+    setEditingRowId(newId);
+  }
 
   const columns: ColumnDef<Entity>[] = React.useMemo(() => [
     {
@@ -428,7 +418,7 @@ export default function EntitiesPage() {
                 >
                   Modifier
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive" onClick={() => (table.options.meta as any)?.deleteRow(row.index)}>
+                <DropdownMenuItem className="text-destructive" onClick={() => (table.options.meta as any)?.deleteRow(row.original.id)}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Supprimer
                 </DropdownMenuItem>
@@ -440,7 +430,7 @@ export default function EntitiesPage() {
   ], []);
 
   const table = useReactTable({
-    data,
+    data: entities,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -460,33 +450,13 @@ export default function EntitiesPage() {
       openSelectId,
       setOpenSelectId,
       updateData: (rowIndex: number, columnId: string, value: any) => {
-        setData((old) =>
-          old.map((row, index) => {
-            if (index === rowIndex) {
-              return {
-                ...old[rowIndex]!,
-                [columnId]: value,
-              };
-            }
-            return row;
-          })
-        );
+        const entityId = entities[rowIndex]?.id;
+        if(entityId) {
+          updateEntity(entityId, columnId, value);
+        }
       },
-      deleteRow: (rowIndex: number) => {
-        setData((old) => old.filter((_, index) => index !== rowIndex));
-      },
-      addRow: () => {
-        const newId = `ENT-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`
-        const newRow: Entity = {
-            id: newId,
-            nom: "Nouvelle collectivité",
-            population: 0,
-            type: "Utilisatrice",
-            statut: "Inactif",
-            services: [],
-        };
-        setData((old) => [...old, newRow]);
-        setEditingRowId(newId);
+      deleteRow: (entityId: string) => {
+        deleteEntity(entityId);
       },
     },
   });
@@ -516,7 +486,7 @@ export default function EntitiesPage() {
               <Upload className="mr-2 h-4 w-4" />
               Importer
             </Button>
-            <Button size="sm" onClick={() => table.options.meta?.addRow()}>
+            <Button size="sm" onClick={handleAddRow}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Ajouter une Entité
             </Button>

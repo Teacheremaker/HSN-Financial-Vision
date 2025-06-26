@@ -10,9 +10,8 @@ import {
   YAxis,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-  Line,
   ReferenceLine,
+  Line,
 } from 'recharts';
 
 import {
@@ -36,47 +35,15 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer } from '@/components/ui/chart';
 import { useProfitabilityStore } from '@/hooks/use-profitability-store';
-import type { Adherent } from '@/types';
+import { useEntityStore } from '@/hooks/use-entity-store';
+import { useTariffStore } from '@/hooks/use-tariff-store';
+import { useCostStore } from '@/hooks/use-cost-store';
+import { getTariffPriceForEntity } from '@/lib/projections';
+import { SERVICES as allServices } from '@/hooks/use-scenario-store';
 
-// --- MOCK DATA ---
-const SERVICES = [
-  { id: 'geoter', name: 'GEOTER' },
-  { id: 'spanc', name: 'SPANC' },
-  { id: 'route', name: 'ROUTE' },
-  { id: 'ads', name: 'ADS' },
-];
-
-const ADHERENTS: Adherent[] = [
-  { id: '1', name: 'Ville A', population: 2500, status: 'Fondatrice', adhesionDate: '2024-01-15', services: ['GEOTER', 'SPANC'] },
-  { id: '2', name: 'Ville B', population: 8000, status: 'Fondatrice', adhesionDate: '2024-02-20', services: ['GEOTER'] },
-  { id: '3', name: 'Village C', population: 950, status: 'Utilisatrice', adhesionDate: '2024-03-10', services: ['SPANC'] },
-  { id: '4', name: 'Ville D', population: 12000, status: 'Utilisatrice', adhesionDate: '2024-04-05', services: ['GEOTER', 'SPANC', 'ROUTE'] },
-  { id: '5', name: 'Ville E', population: 3200, status: 'Utilisatrice', adhesionDate: '2024-05-21', services: ['GEOTER'] },
-  { id: '6', name: 'Village F', population: 1500, status: 'Utilisatrice', adhesionDate: '2024-06-18', services: ['SPANC', 'ADS'] },
-  { id: '7', name: 'Ville G', population: 25000, status: 'Utilisatrice', adhesionDate: '2024-07-01', services: ['ROUTE', 'ADS'] },
-  { id: '8', name: 'Ville H', population: 6700, status: 'Utilisatrice', adhesionDate: '2024-08-11', services: ['GEOTER', 'SPANC'] },
-  { id: '9', name: 'Village I', population: 1100, status: 'Utilisatrice', adhesionDate: '2024-09-02', services: ['GEOTER'] },
-  { id: '10', name: 'Ville J', population: 4500, status: 'Utilisatrice', adhesionDate: '2024-10-15', services: ['SPANC', 'ROUTE'] },
-  { id: '11', name: 'Ville K', population: 18000, status: 'Utilisatrice', adhesionDate: '2024-11-25', services: ['GEOTER', 'ADS'] },
-  { id: '12', name: 'Ville L', population: 7200, status: 'Utilisatrice', adhesionDate: '2024-12-30', services: ['SPANC'] },
-  { id: '13', name: 'Village M', population: 600, status: 'Utilisatrice', adhesionDate: '2025-01-19', services: ['GEOTER', 'SPANC'] },
-  { id: '14', name: 'Ville N', population: 9800, status: 'Utilisatrice', adhesionDate: '2025-02-22', services: ['ROUTE'] },
-  { id: '15', name: 'Ville O', population: 15000, status: 'Utilisatrice', adhesionDate: '2025-03-14', services: ['GEOTER', 'ADS', 'ROUTE'] },
-].sort((a, b) => new Date(a.adhesionDate).getTime() - new Date(b.adhesionDate).getTime());
-
-const TARIFFS: { [key: string]: number } = {
-  'GEOTER': 1.2,
-  'SPANC': 0.8,
-  'ROUTE': 0.5,
-  'ADS': 0.3,
-};
-
-const COSTS = {
-  fixed: 20000, // Coût fixe annuel
-  perHabitant: 0.5, // Coût variable annuel par habitant
-};
+const SERVICES = allServices.map(s => ({id: s.toLowerCase(), name: s}));
 
 const chartConfig = {
   population: { label: 'Population', color: 'hsl(var(--chart-4))' },
@@ -128,24 +95,42 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function ProfitabilityProjection() {
   const { selectedService, setSelectedService, viewMode, setViewMode } = useProfitabilityStore();
+  const { entities } = useEntityStore();
+  const { tariffs } = useTariffStore();
+  const { costs } = useCostStore();
 
   const isComparativeMode = selectedService === 'Tous les services' && viewMode === 'comparative';
 
   const chartData = React.useMemo(() => {
+    const sortedEntities = [...entities]
+      .filter(e => e.services.length > 0)
+      .sort((a, b) => {
+        const yearA = Math.min(...a.services.map(s => s.year));
+        const yearB = Math.min(...b.services.map(s => s.year));
+        return yearA - yearB;
+      });
+
     const data = [];
     let currentPopulation = 0;
     
     const serviceRevenueAcc: { [key: string]: number } = {};
     SERVICES.forEach(s => serviceRevenueAcc[s.name] = 0);
 
-    for (let i = 0; i < ADHERENTS.length; i++) {
-      const adherent = ADHERENTS[i];
-      currentPopulation += adherent.population;
+    const annualCosts = costs.reduce((sum, cost) => {
+        if (cost.category === 'Fixe' || cost.category === 'Variable' || cost.category === 'Amortissement') {
+            return sum + cost.annualCost;
+        }
+        return sum;
+    }, 0);
+
+
+    for (let i = 0; i < sortedEntities.length; i++) {
+      const entity = sortedEntities[i];
+      currentPopulation += entity.population;
       
-      adherent.services.forEach(serviceName => {
-          if (TARIFFS[serviceName]) {
-            serviceRevenueAcc[serviceName] += adherent.population * TARIFFS[serviceName];
-          }
+      entity.services.forEach(serviceSubscription => {
+          const price = getTariffPriceForEntity(entity, serviceSubscription.name, tariffs);
+          serviceRevenueAcc[serviceSubscription.name] = (serviceRevenueAcc[serviceSubscription.name] || 0) + price;
       });
       
       let recettes = 0;
@@ -155,8 +140,7 @@ export function ProfitabilityProjection() {
           recettes = serviceRevenueAcc[selectedService] || 0;
       }
 
-      const charges = COSTS.fixed + currentPopulation * COSTS.perHabitant;
-      const resultat = recettes - charges;
+      const resultat = recettes - annualCosts;
 
       const dataPoint: any = {
         adherentCount: i + 1,
@@ -174,19 +158,18 @@ export function ProfitabilityProjection() {
       data.push(dataPoint);
     }
     return data;
-  }, [selectedService, viewMode, isComparativeMode]);
+  }, [entities, tariffs, costs, selectedService, viewMode, isComparativeMode]);
 
   const breakEvenPoint = React.useMemo(() => {
     const point = chartData.find(d => d.resultat >= 0);
     if (point) {
-      const population = ADHERENTS.slice(0, point.adherentCount)
-        .reduce((sum, a) => sum + a.population, 0);
+      const population = chartData[point.adherentCount - 1].population;
       const serviceText = selectedService === 'Tous les services' ? 'pour l\'ensemble des services' : `pour le service ${selectedService}`;
 
       return `Le seuil de rentabilité ${serviceText} est atteint avec ${point.adherentCount} adhérents (soit ${population.toLocaleString('fr-FR')} habitants).`;
     }
-    return `Le seuil de rentabilité n'est pas atteint avec ${ADHERENTS.length} adhérents.`;
-  }, [chartData, selectedService]);
+    return `Le seuil de rentabilité n'est pas atteint avec ${entities.filter(e=>e.services.length > 0).length} adhérents.`;
+  }, [chartData, selectedService, entities]);
 
   return (
     <Card>

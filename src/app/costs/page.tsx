@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { PlusCircle, Save, MoreHorizontal, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
@@ -41,79 +41,45 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { OperationalCost } from "@/types";
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { initialCosts } from '@/data/costs';
+import { useCostStore } from '@/hooks/use-cost-store';
 
 const services = ["GEOTER", "SPANC", "ROUTE", "ADS", "Global"];
 
 export default function CostsPage() {
     const { toast } = useToast();
-    const [costs, setCosts] = useState<OperationalCost[]>(initialCosts);
+    const { costs, updateCost, addCost, deleteCost } = useCostStore();
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('GEOTER');
 
-    useEffect(() => {
-        try {
-            const savedCosts = localStorage.getItem('hsn-operational-costs');
-            if (savedCosts) {
-                setCosts(JSON.parse(savedCosts));
-            }
-        } catch (error) {
-            console.error("Failed to parse costs from localStorage", error);
-        }
-    }, []);
 
     const handleSaveChanges = () => {
-        try {
-            localStorage.setItem('hsn-operational-costs', JSON.stringify(costs));
-            toast({
-                title: "Sauvegarde réussie",
-                description: "Les coûts opérationnels ont été sauvegardés localement.",
-            });
-        } catch (error) {
-            console.error("Failed to save costs to localStorage", error);
-            toast({
-                variant: "destructive",
-                title: "Erreur de sauvegarde",
-                description: "Impossible de sauvegarder les modifications.",
-            });
-        }
+        // With Zustand, changes are saved automatically to the state.
+        // This function could be used for persisting to a backend if needed.
+        toast({
+            title: "Modifications enregistrées",
+            description: "Les coûts opérationnels ont été mis à jour dans l'état de l'application.",
+        });
     };
 
     const handleUpdate = (id: string, field: keyof OperationalCost, value: any) => {
-        setCosts(currentCosts => {
-            let updatedCosts = currentCosts.map(cost =>
-                cost.id === id ? { ...cost, [field]: value } : cost
-            );
+        updateCost(id, field, value);
 
-            const changedCost = updatedCosts.find(c => c.id === id);
-            
-            if (changedCost?.category === 'À amortir') {
-                const investmentCost = changedCost;
-                const amortizationLine = updatedCosts.find(c => c.service === investmentCost.service && c.category === 'Amortissement');
-
-                if (amortizationLine) {
-                    const amountToAmortize = investmentCost.annualCost;
-                    const duration = investmentCost.amortizationDuration;
-                    
-                    if (amountToAmortize > 0 && duration && duration > 0) {
-                        const calculatedAmortization = amountToAmortize / duration;
-                        updatedCosts = updatedCosts.map(cost => {
-                            if (cost.id === amortizationLine.id) {
-                                return { 
-                                    ...cost, 
-                                    annualCost: calculatedAmortization,
-                                    amortizationStartYear: investmentCost.amortizationStartYear,
-                                    amortizationDuration: investmentCost.amortizationDuration,
-                                };
-                            }
-                            return cost;
-                        });
-                    }
-                }
-            }
-            
-            return updatedCosts;
-        });
+        // If the updated cost is an investment, recalculate the amortization
+        const changedCost = costs.find(c => c.id === id);
+        if (changedCost?.category === 'À amortir') {
+             const investmentCost = { ...changedCost, [field]: value };
+             const amortizationLine = costs.find(c => c.service === investmentCost.service && c.category === 'Amortissement');
+             if (amortizationLine) {
+                 const amountToAmortize = investmentCost.annualCost;
+                 const duration = investmentCost.amortizationDuration;
+                 if (amountToAmortize > 0 && duration && duration > 0) {
+                     const calculatedAmortization = amountToAmortize / duration;
+                     updateCost(amortizationLine.id, 'annualCost', calculatedAmortization);
+                     updateCost(amortizationLine.id, 'amortizationStartYear', investmentCost.amortizationStartYear);
+                     updateCost(amortizationLine.id, 'amortizationDuration', investmentCost.amortizationDuration);
+                 }
+             }
+        }
     };
 
     const handleAddNew = () => {
@@ -126,12 +92,8 @@ export default function CostsPage() {
             annualCost: 0,
             notes: "",
         };
-        setCosts(currentCosts => [...currentCosts, newCost]);
+        addCost(newCost);
         setEditingRowId(newId);
-    };
-
-    const handleDelete = (id: string) => {
-        setCosts(currentCosts => currentCosts.filter(cost => cost.id !== id));
     };
     
     const filteredCosts = costs.filter(cost => cost.service === activeTab);
@@ -151,7 +113,7 @@ export default function CostsPage() {
                     </Button>
                     <Button onClick={handleSaveChanges}>
                         <Save className="mr-2 h-4 w-4" />
-                        Sauvegarder les modifications
+                        Enregistrer
                     </Button>
                 </div>
             }
@@ -302,7 +264,7 @@ export default function CostsPage() {
                                                         <DropdownMenuItem onClick={() => setEditingRowId(cost.id)}>
                                                             Modifier
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(cost.id)}>
+                                                        <DropdownMenuItem className="text-destructive" onClick={() => deleteCost(cost.id)}>
                                                             <Trash2 className="mr-2 h-4 w-4" />
                                                             Supprimer
                                                         </DropdownMenuItem>

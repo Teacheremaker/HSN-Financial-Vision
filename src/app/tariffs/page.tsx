@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { PlusCircle, Save, MoreHorizontal, Trash2 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
@@ -30,125 +30,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Tariff } from "@/types";
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-
-const initialTariffs: Tariff[] = [
-    // GEOTER
-    { id: 'T-G-01', service: 'GEOTER', category: 'Communes 0 à 250', populationMin: 0, populationMax: 250, priceUser: 150, discountFounder: 0 },
-    { id: 'T-G-02', service: 'GEOTER', category: 'Communes 251 à 500', populationMin: 251, populationMax: 500, priceUser: 450, discountFounder: 0 },
-    { id: 'T-G-03', service: 'GEOTER', category: 'Communes 501 à 750', populationMin: 501, populationMax: 750, priceUser: 550, discountFounder: 0 },
-    { id: 'T-G-04', service: 'GEOTER', category: 'Communes 751 à 1000', populationMin: 751, populationMax: 1000, priceUser: 700, discountFounder: 0 },
-    { id: 'T-G-05', service: 'GEOTER', category: 'Communes 1001 à 3000', populationMin: 1001, populationMax: 3000, priceUser: 750, discountFounder: 0 },
-    { id: 'T-G-06', service: 'GEOTER', category: 'Communes Supérieur à 3000', populationMin: 3001, populationMax: 20000, priceUser: 1800, discountFounder: 0 },
-    { id: 'T-G-07', service: 'GEOTER', category: 'syndicats ≤ 4 000 habitants', populationMin: 1, populationMax: 4000, priceUser: 700, discountFounder: 0 },
-    { id: 'T-G-08', service: 'GEOTER', category: 'syndicats de 4 001 à 10 000 habitants', populationMin: 4001, populationMax: 10000, priceUser: 180, discountFounder: 0 },
-    { id: 'T-G-09', service: 'GEOTER', category: 'syndicats > 10 000 habitants', populationMin: 10001, populationMax: 20000, priceUser: 4000, discountFounder: 0 },
-    { id: 'T-G-10', service: 'GEOTER', category: 'syndicats > 20 000 habitants', populationMin: 20001, populationMax: 40000, priceUser: 5000, discountFounder: 0 },
-    { id: 'T-G-11', service: 'GEOTER', category: 'Autre (SDSIS, OPH, ingenieurie70)', priceFounder: 5000, priceUser: 5000, notes: 'à définir' },
-    { id: 'T-G-12', service: 'GEOTER', category: 'Communauté de communes < 10 000 habitants', populationMin: 1, populationMax: 10000, priceFounder: 1000, priceUser: 1000, discountFounder: 100 },
-    { id: 'T-G-13', service: 'GEOTER', category: 'Communauté de communes de 10 001 à 20 000 habitants', populationMin: 10001, populationMax: 20000, priceFounder: 1800, priceUser: 1800, discountFounder: 100 },
-    { id: 'T-G-14', service: 'GEOTER', category: 'Communauté de communes > 20 000 habitants', populationMin: 20001, populationMax: 100000, priceFounder: 2500, priceUser: 2500, discountFounder: 100 },
-    { id: 'T-G-15', service: 'GEOTER', category: 'Communauté d\'agglo', populationMin: 0, populationMax: 100000, priceFounder: 5000, priceUser: 5000, discountFounder: 0 },
-    { id: 'T-G-16', service: 'GEOTER', category: 'Département', populationMin: 0, populationMax: 300000, priceFounder: 5000, priceUser: 5000, discountFounder: 100 },
-
-    // SPANC
-    { id: 'T-S-01', service: 'SPANC', category: 'Communes 0 à 250', populationMin: 0, populationMax: 250, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-02', service: 'SPANC', category: 'Communes 251 à 500', populationMin: 251, populationMax: 500, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-03', service: 'SPANC', category: 'Communes 501 à 750', populationMin: 501, populationMax: 750, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-04', service: 'SPANC', category: 'Communes 751 à 1000', populationMin: 751, populationMax: 1000, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-05', service: 'SPANC', category: 'Communes 1001 à 3000', populationMin: 1001, populationMax: 3000, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-06', service: 'SPANC', category: 'Communes Supérieur à 3000', populationMin: 3001, populationMax: 20000, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-07', service: 'SPANC', category: 'syndicats ≤ 4 000 habitants', populationMin: 1, populationMax: 4000, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-08', service: 'SPANC', category: 'syndicats de 4 001 à 10 000 habitants', populationMin: 4001, populationMax: 10000, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-09', service: 'SPANC', category: 'syndicats > à 10 000 habitants', populationMin: 10001, populationMax: 20000, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-10', service: 'SPANC', category: 'syndicats > à 20 000 habitants', populationMin: 20001, populationMax: 40000, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-11', service: 'SPANC', category: 'Autre (SDSIS, OPH, ingenieurie70)', priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-12', service: 'SPANC', category: 'Communauté de communes < 10 000 habitants', populationMin: 1, populationMax: 10000, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-13', service: 'SPANC', category: 'Communauté de communes de 10 001 à 20 000 habitants', populationMin: 10001, populationMax: 20000, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-14', service: 'SPANC', category: 'Communauté de communes > 20 000 habitants', populationMin: 20001, populationMax: 100000, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-15', service: 'SPANC', category: 'Communauté d\'agglo', populationMin: 0, populationMax: 100000, priceFounder: 850, priceUser: 1200 },
-    { id: 'T-S-16', service: 'SPANC', category: 'Département', populationMin: 0, populationMax: 300000, priceFounder: 850, priceUser: 1200 },
-
-    // ROUTE
-    { id: 'T-R-01', service: 'ROUTE', category: 'Communes 0 à 250', populationMin: 0, populationMax: 250, priceFounder: 250, priceUser: 150 },
-    { id: 'T-R-02', service: 'ROUTE', category: 'Communes 251 à 500', populationMin: 251, populationMax: 500, priceFounder: 500, priceUser: 200 },
-    { id: 'T-R-03', service: 'ROUTE', category: 'Communes 501 à 750', populationMin: 501, populationMax: 750, priceFounder: 750, priceUser: 300 },
-    { id: 'T-R-04', service: 'ROUTE', category: 'Communes 751 à 1000', populationMin: 751, populationMax: 1000, priceFounder: 1000, priceUser: 500 },
-    { id: 'T-R-05', service: 'ROUTE', category: 'Communes 1001 à 3000', populationMin: 1001, populationMax: 3000, priceFounder: 3000, priceUser: 800 },
-    { id: 'T-R-06', service: 'ROUTE', category: 'Communes Supérieur à 3000', populationMin: 3001, populationMax: 20000, priceFounder: 0, priceUser: 1200 },
-    { id: 'T-R-07', service: 'ROUTE', category: 'syndicats ≤ 4 000 habitants', populationMin: 1, populationMax: 4000, priceFounder: 800, priceUser: 1200 },
-    { id: 'T-R-08', service: 'ROUTE', category: 'syndicats de 4 001 à 10 000 habitants', populationMin: 4001, populationMax: 10000, priceFounder: 800, priceUser: 1200 },
-    { id: 'T-R-09', service: 'ROUTE', category: 'syndicats > à 10 000 habitants', populationMin: 10001, populationMax: 20000, priceFounder: 800, priceUser: 1200 },
-    { id: 'T-R-10', service: 'ROUTE', category: 'syndicats > à 20 000 habitants', populationMin: 20001, populationMax: 40000, priceFounder: 800, priceUser: 1200 },
-    { id: 'T-R-11', service: 'ROUTE', category: 'Autre (SDSIS, OPH, ingenieurie70)', priceFounder: 800, priceUser: 1200 },
-    { id: 'T-R-12', service: 'ROUTE', category: 'Communauté de communes < 10 000 habitants', populationMin: 1, populationMax: 10000, priceFounder: 800, priceUser: 1200 },
-    { id: 'T-R-13', service: 'ROUTE', category: 'Communauté de communes de 10 001 à 20 000 habitants', populationMin: 10001, populationMax: 20000, priceFounder: 800, priceUser: 1200 },
-    { id: 'T-R-14', service: 'ROUTE', category: 'Communauté de communes > 20 000 habitants', populationMin: 20001, populationMax: 100000, priceFounder: 800, priceUser: 1200 },
-    { id: 'T-R-15', service: 'ROUTE', category: 'Communauté d\'agglo', populationMin: 0, populationMax: 100000, priceFounder: 800, priceUser: 1200 },
-    { id: 'T-R-16', service: 'ROUTE', category: 'Département', populationMin: 0, populationMax: 300000, priceFounder: 800, priceUser: 1200 },
-
-    // ADS
-    { id: 'T-A-01', service: 'ADS', category: 'Communes 0 à 250', populationMin: 0, populationMax: 250, priceUser: 100 },
-    { id: 'T-A-02', service: 'ADS', category: 'Communes 251 à 500', populationMin: 251, populationMax: 500, priceUser: 200 },
-    { id: 'T-A-03', service: 'ADS', category: 'Communes 501 à 750', populationMin: 501, populationMax: 750, priceUser: 400 },
-    { id: 'T-A-04', service: 'ADS', category: 'Communes 751 à 1000', populationMin: 751, populationMax: 1000, priceUser: 600 },
-    { id: 'T-A-05', service: 'ADS', category: 'Communes 1001 à 3000', populationMin: 1001, populationMax: 3000, priceUser: 800 },
-    { id: 'T-A-06', service: 'ADS', category: 'Communes Supérieur à 3000', populationMin: 3001, populationMax: 20000, priceFounder: 0, priceUser: 1000 },
-    { id: 'T-A-07', service: 'ADS', category: 'syndicats ≤ 4 000 habitants', populationMin: 1, populationMax: 4000, priceFounder: 3000, priceUser: 4000 },
-    { id: 'T-A-08', service: 'ADS', category: 'syndicats de 4 001 à 10 000 habitants', populationMin: 4001, populationMax: 10000, priceFounder: 3000, priceUser: 4000 },
-    { id: 'T-A-09', service: 'ADS', category: 'syndicats > à 10 000 habitants', populationMin: 10001, populationMax: 20000, priceFounder: 3000, priceUser: 4000 },
-    { id: 'T-A-10', service: 'ADS', category: 'syndicats > à 20 000 habitants', populationMin: 20001, populationMax: 40000, priceFounder: 3000, priceUser: 4000 },
-    { id: 'T-A-11', service: 'ADS', category: 'Autre (SDSIS,OPH, ingenieurie70)', priceFounder: 3000, priceUser: 4000 },
-    { id: 'T-A-12', service: 'ADS', category: 'Communauté de communes < 10 000 habitants', populationMin: 1, populationMax: 10000, priceFounder: 3000, priceUser: 4000 },
-    { id: 'T-A-13', service: 'ADS', category: 'Communauté de communes de 10 001 à 20 000 habitants', populationMin: 10001, populationMax: 20000, priceFounder: 3000, priceUser: 4000 },
-    { id: 'T-A-14', service: 'ADS', category: 'Communauté de communes > 20 000 habitants', populationMin: 20001, populationMax: 100000, priceFounder: 3000, priceUser: 4000 },
-    { id: 'T-A-15', service: 'ADS', category: 'Communauté d\'agglo', populationMin: 0, populationMax: 100000, priceFounder: 3000, priceUser: 4000 },
-    { id: 'T-A-16', service: 'ADS', category: 'Département', populationMin: 0, populationMax: 300000, priceFounder: 3000, priceUser: 4000 },
-];
+import { useTariffStore } from '@/hooks/use-tariff-store';
 
 const services = ["GEOTER", "SPANC", "ROUTE", "ADS"];
 
 export default function TariffsPage() {
     const { toast } = useToast();
-    const [tariffs, setTariffs] = useState<Tariff[]>(initialTariffs);
+    const { tariffs, updateTariff, addTariff, deleteTariff } = useTariffStore();
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState(services[0] ?? "");
 
-    useEffect(() => {
-        try {
-            const savedTariffs = localStorage.getItem('hsn-tariffs');
-            if (savedTariffs) {
-                setTariffs(JSON.parse(savedTariffs));
-            }
-        } catch (error) {
-            console.error("Failed to parse tariffs from localStorage", error);
-        }
-    }, []);
-
     const handleSaveChanges = () => {
-        try {
-            localStorage.setItem('hsn-tariffs', JSON.stringify(tariffs));
-            toast({
-                title: "Sauvegarde réussie",
-                description: "La grille tarifaire a été sauvegardée localement.",
-            });
-        } catch (error) {
-            console.error("Failed to save tariffs to localStorage", error);
-            toast({
-                variant: "destructive",
-                title: "Erreur de sauvegarde",
-                description: "Impossible de sauvegarder les modifications.",
-            });
-        }
+        // With Zustand, changes are saved automatically.
+        toast({
+            title: "Modifications enregistrées",
+            description: "La grille tarifaire a été mise à jour.",
+        });
     };
 
     const handleUpdate = (id: string, field: keyof Tariff, value: any) => {
-        setTariffs(currentTariffs =>
-            currentTariffs.map(tariff =>
-                tariff.id === id ? { ...tariff, [field]: value } : tariff
-            )
-        );
+        updateTariff(id, field, value);
     };
 
     const handleAddNew = () => {
@@ -158,12 +60,12 @@ export default function TariffsPage() {
             service: activeTab,
             category: "Nouvelle strate/catégorie",
         };
-        setTariffs(currentTariffs => [...currentTariffs, newTariff]);
+        addTariff(newTariff);
         setEditingRowId(newId);
     };
 
     const handleDelete = (id: string) => {
-        setTariffs(currentTariffs => currentTariffs.filter(tariff => tariff.id !== id));
+        deleteTariff(id);
     };
 
     const filteredTariffs = tariffs.filter(tariff => tariff.service === activeTab);
@@ -188,7 +90,7 @@ export default function TariffsPage() {
                     </Button>
                     <Button onClick={handleSaveChanges}>
                         <Save className="mr-2 h-4 w-4" />
-                        Sauvegarder les modifications
+                        Enregistrer
                     </Button>
                 </div>
             }

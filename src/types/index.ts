@@ -1,4 +1,6 @@
 
+import type { MultiSelectOption as MultiSelectOptionPrimitive } from "@/components/ui/multi-select";
+
 export type KpiData = {
   name: string;
   value: string;
@@ -20,9 +22,12 @@ export type ServiceSubscription = {
   year: number;
 };
 
+export type EntityType = 'Commune' | 'Syndicat' | 'Communauté de communes' | 'Communauté d\'agglo' | 'Département' | 'Autre';
+
 export type Entity = {
   id: string;
   nom: string;
+  entityType?: EntityType;
   population: number;
   type: 'Fondatrice' | 'Utilisatrice';
   statut: 'Actif' | 'Inactif';
@@ -60,3 +65,5 @@ export type Adherent = {
   adhesionDate: string;
   services: string[];
 };
+
+export type MultiSelectOption = MultiSelectOptionPrimitive;

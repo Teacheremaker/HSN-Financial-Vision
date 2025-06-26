@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo } from "react";
 import { ComposedChart, Bar, Line, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
@@ -25,11 +25,12 @@ import {
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart"
-import type { OperationalCost } from "@/types"
-import { useScenarioStore, initialScenarioState, SERVICES, type AdoptionRates, type Scenarios, type Service } from "@/hooks/use-scenario-store";
+import { useScenarioStore, initialScenarioState, SERVICES, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
-import { initialCosts } from "@/data/costs";
-import { serviceProjectionData } from "@/data/projections";
+import { useEntityStore } from "@/hooks/use-entity-store";
+import { useTariffStore } from "@/hooks/use-tariff-store";
+import { useCostStore } from "@/hooks/use-cost-store";
+import { getTariffPriceForEntity } from "@/lib/projections";
 
 const chartConfigBase = {
   revenue: {
@@ -53,23 +54,15 @@ const servicesForFilter = ['Tous les services', ...SERVICES];
 export function MainChart() {
   const { scenarios, activeScenario, startYear, endYear } = useScenarioStore();
   const { selectedService, setSelectedService } = useChartFilterStore();
-  const [costs, setCosts] = useState<OperationalCost[]>(initialCosts);
+  const { entities } = useEntityStore();
+  const { tariffs } = useTariffStore();
+  const { costs } = useCostStore();
+
   const years = useMemo(() => {
     if (startYear > endYear) return [];
     return Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i)
   }, [startYear, endYear]);
 
-  useEffect(() => {
-      try {
-          const savedCosts = localStorage.getItem('hsn-operational-costs');
-          if (savedCosts) {
-              setCosts(JSON.parse(savedCosts));
-          }
-      } catch (error) {
-          console.error("Failed to parse costs from localStorage", error);
-      }
-  }, []);
-  
   const isAllServicesView = selectedService === 'Tous les services';
 
   const chartConfig = useMemo(() => {
@@ -80,68 +73,65 @@ export function MainChart() {
   }, []);
 
   const chartData = useMemo(() => {
-    const costByYear = new Map<number, number>();
-    years.forEach(year => {
-        let yearTotalCost = 0;
-        const relevantCosts = costs.filter(cost => {
-            if (selectedService === 'Tous les services') return true;
-            return cost.service === selectedService;
-        });
-
-        const currentScenario = scenarios[activeScenario];
-        const indexationRate = currentScenario.indexationRate / 100;
-        const numYearsIndexed = year > startYear ? year - startYear : 0;
-        
-        relevantCosts.forEach(cost => {
-            if (cost.category === 'Fixe' || cost.category === 'Variable') {
-                const indexedCost = cost.annualCost * Math.pow(1 + indexationRate, numYearsIndexed);
-                yearTotalCost += indexedCost;
-            } else if (cost.category === 'Amortissement') {
-                const startYear = cost.amortizationStartYear ?? 0;
-                const duration = cost.amortizationDuration ?? 0;
-                if (duration > 0 && year >= startYear && year < startYear + duration) {
-                    yearTotalCost += cost.annualCost;
-                }
-            }
-        });
-        costByYear.set(year, Math.round(yearTotalCost / 1000));
-    });
+    const currentScenario = scenarios[activeScenario];
 
     return years.map(year => {
-      const dataPoint: any = {
-        year: year,
-        cost: costByYear.get(year) || 0,
-      };
+      const dataPoint: any = { year };
 
-      const currentScenario = scenarios[activeScenario];
+      // --- Cost Calculation ---
+      let yearTotalCost = 0;
+      const indexationRate = currentScenario.indexationRate / 100;
+      const numYearsIndexed = year > startYear ? year - startYear : 0;
+      
+      const relevantCosts = costs.filter(cost => {
+          if (isAllServicesView) return cost.service !== 'Global'; // Exclude global if viewing all
+          return cost.service === selectedService;
+      });
+      const globalCosts = costs.filter(c => c.service === 'Global');
+
+      [...relevantCosts, ...globalCosts].forEach(cost => {
+        const costInflationFactor = (cost.category === 'Fixe' || cost.category === 'Variable') ? Math.pow(1 + indexationRate, numYearsIndexed) : 1;
+        
+        if (cost.category === 'Amortissement') {
+            const start = cost.amortizationStartYear ?? 0;
+            const duration = cost.amortizationDuration ?? 0;
+            if (duration > 0 && year >= start && year < start + duration) {
+                yearTotalCost += cost.annualCost;
+            }
+        } else {
+            yearTotalCost += cost.annualCost * costInflationFactor;
+        }
+      });
+      dataPoint.cost = Math.round(yearTotalCost / 1000);
+
+      // --- Revenue Calculation ---
       const priceIncreaseFactor = Math.pow(1 + (currentScenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
-
-      // Determine which services to show based on the filter
-      const servicesToProject = isAllServicesView ? SERVICES : [selectedService as Service];
       
       SERVICES.forEach(service => {
-        if (servicesToProject.includes(service as Service)) {
-          const serviceDataForYear = serviceProjectionData.find(d => d.year === year && d.service === service);
-          if (!serviceDataForYear) {
-            dataPoint[service] = 0;
-            return;
-          }
-          
-          const serviceKey = service as keyof AdoptionRates;
-          const initialAdoptionRate = initialScenarioState[activeScenario].adoptionRates[serviceKey];
-          const adoptionFactor = initialAdoptionRate > 0 ? currentScenario.adoptionRates[serviceKey] / initialAdoptionRate : 1;
-          const revenueForService = (serviceDataForYear[activeScenario] * 1000) * adoptionFactor * priceIncreaseFactor;
-          dataPoint[service] = Math.round(revenueForService / 1000);
-        } else {
-            // Ensure other service keys are not present or are 0 if not selected
-            dataPoint[service] = 0;
-        }
+        dataPoint[service] = 0;
+        let serviceRevenue = 0;
+        
+        entities.forEach(entity => {
+            if (entity.statut !== 'Actif') return;
+            const subscription = entity.services.find(s => s.name === service);
+            if (subscription && year >= subscription.year) {
+                const price = getTariffPriceForEntity(entity, service, tariffs);
+                serviceRevenue += price;
+            }
+        });
+
+        const serviceKey = service as keyof AdoptionRates;
+        const initialAdoptionRate = initialScenarioState[activeScenario].adoptionRates[serviceKey];
+        const currentAdoptionRate = currentScenario.adoptionRates[serviceKey];
+        const adoptionFactor = initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
+
+        dataPoint[service] = Math.round((serviceRevenue * adoptionFactor * priceIncreaseFactor) / 1000);
       });
 
       return dataPoint;
     }).sort((a,b) => a.year - b.year);
 
-  }, [scenarios, activeScenario, selectedService, costs, years, startYear, isAllServicesView]);
+  }, [scenarios, activeScenario, selectedService, costs, years, startYear, isAllServicesView, entities, tariffs]);
 
   return (
     <Card>
@@ -186,7 +176,8 @@ export function MainChart() {
             <ChartLegend content={<ChartLegendContent />} />
             
             {SERVICES.map(service => (
-              <Bar key={service} dataKey={service} fill={`var(--color-${service})`} stackId="revenue" radius={0} />
+              (isAllServicesView || selectedService === service) &&
+              <Bar key={service} dataKey={service} fill={serviceColors[service]} stackId="revenue" radius={0} />
             ))}
 
             <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} />
