@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -95,10 +94,6 @@ const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
                       } else {
                         onChange([...selected, currentValue]);
                       }
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
                     }}
                   >
                     <Check
