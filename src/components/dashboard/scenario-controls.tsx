@@ -19,9 +19,13 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { useScenarioStore, type Scenarios, SERVICES, initialScenarioState } from "@/hooks/use-scenario-store";
+import { useScenarioStore, type Scenarios, SERVICES, initialScenarioState, type Service, type AdoptionRates, type Scenario } from "@/hooks/use-scenario-store";
 import { Input } from "@/components/ui/input";
 import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { useEntityStore } from "@/hooks/use-entity-store";
+import { useTariffStore } from "@/hooks/use-tariff-store";
+import { useCostStore } from "@/hooks/use-cost-store";
+import { getTariffPriceForEntity } from "@/lib/projections";
 
 const ParameterSlider = ({
   label,
@@ -100,51 +104,94 @@ const ScenarioTab = ({ scenarioName }: { scenarioName: keyof Scenarios }) => {
 };
 
 const RoiCard = () => {
-    const { scenarios, activeScenario } = useScenarioStore();
+    const { scenarios, activeScenario, startYear, endYear } = useScenarioStore();
+    const { entities } = useEntityStore();
+    const { tariffs } = useTariffStore();
+    const { costs } = useCostStore();
 
     const roiData = useMemo(() => {
         const currentScenario = scenarios[activeScenario];
         const initialScenario = initialScenarioState[activeScenario];
+        const operationalCosts = costs.filter((c) => c.category !== 'À amortir');
 
-        const currentAdoptionRates = Object.values(currentScenario.adoptionRates);
-        const newAdoption = currentAdoptionRates.reduce((a, b) => a + b, 0) / currentAdoptionRates.length;
+        const calculateValues = (scenario: Scenario, year: number) => {
+            let revenue = 0;
+            let cost = 0;
+            
+            // --- Revenue ---
+            const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
+            
+            SERVICES.forEach(service => {
+                let serviceRevenue = 0;
+                entities.forEach(entity => {
+                    if (entity.statut !== 'Actif') return;
+                    const subscription = entity.services.find(s => s.name === service);
+                    if (subscription && year >= subscription.year) {
+                        const price = getTariffPriceForEntity(entity, service, tariffs);
+                        serviceRevenue += price;
+                    }
+                });
 
-        const initialAdoptionRates = Object.values(initialScenario.adoptionRates);
-        const baseAdoption = initialAdoptionRates.reduce((a, b) => a + b, 0) / initialAdoptionRates.length;
+                const serviceKey = service as keyof AdoptionRates;
+                const initialAdoptionRate = initialScenarioState[activeScenario].adoptionRates[serviceKey];
+                const currentAdoptionRate = scenario.adoptionRates[serviceKey];
+                const adoptionFactor = initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
+
+                revenue += serviceRevenue * adoptionFactor;
+            });
+            
+            revenue *= priceIncreaseFactor;
+
+            // --- Cost ---
+            const indexationRate = scenario.indexationRate / 100;
+            const numYearsIndexed = year > startYear ? year - startYear : 0;
+            
+            operationalCosts.forEach((c) => {
+                const costInflationFactor = (c.category === 'Fixe' || c.category === 'Variable') ? Math.pow(1 + indexationRate, numYearsIndexed) : 1;
+                
+                if (c.category === 'Amortissement') {
+                    const start = c.amortizationStartYear ?? 0;
+                    const duration = c.amortizationDuration ?? 0;
+                    if (duration > 0 && year >= start && year < start + duration) {
+                        cost += c.annualCost;
+                    }
+                } else {
+                    cost += c.annualCost * costInflationFactor;
+                }
+            });
+            
+            return { revenue, cost };
+        }
+
+        const current = calculateValues(currentScenario, endYear);
+        const initial = calculateValues(initialScenario, endYear);
         
-        const adoptionFactor = baseAdoption > 0 ? newAdoption / baseAdoption : 1;
-        
-        const priceFactor = (1 + currentScenario.priceIncrease / 100) / (1 + initialScenario.priceIncrease / 100);
-        const indexationFactor = (1 + currentScenario.indexationRate / 100) / (1 + initialScenario.indexationRate / 100);
-
-        const baseRevenue = 45231.89;
-        const baseCost = 8750.00;
-
-        const newRevenue = baseRevenue * adoptionFactor * priceFactor;
-        const newCost = baseCost * indexationFactor;
-        const newRoi = baseCost > 0 ? (newRevenue - newCost) / newCost * 100 : 0;
-        const baseRoiValue = baseCost > 0 ? (baseRevenue - baseCost) / baseCost * 100 : 0;
+        const newRoi = current.cost > 0 ? (current.revenue - current.cost) / current.cost * 100 : (current.revenue > 0 ? Infinity : 0);
+        const baseRoiValue = initial.cost > 0 ? (initial.revenue - initial.cost) / initial.cost * 100 : (initial.revenue > 0 ? Infinity : 0);
 
         const roiChange = newRoi - baseRoiValue;
         
-        const formatChange = (val: number) => `${val >= 0 ? '+' : ''}${val.toFixed(1)} pts`;
+        const formatChange = (val: number) => {
+            if (!isFinite(val)) return "N/A";
+            return `${val >= 0 ? '+' : ''}${val.toFixed(1)} pts`;
+        }
 
         const isGoodChange = newRoi >= baseRoiValue;
         const ChangeIcon = isGoodChange ? ArrowUpRight : ArrowDownRight;
         const changeColor = isGoodChange ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500';
 
         return {
-            value: `${newRoi.toFixed(1)}%`,
+            value: isFinite(newRoi) ? `${newRoi.toFixed(1)}%` : '∞',
             change: formatChange(roiChange),
             changeColor,
             ChangeIcon,
         };
-    }, [scenarios, activeScenario]);
+    }, [scenarios, activeScenario, costs, entities, tariffs, startYear, endYear]);
 
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">ROI Projeté</CardTitle>
+                <CardTitle className="text-sm font-medium">ROI Projeté ({endYear})</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>

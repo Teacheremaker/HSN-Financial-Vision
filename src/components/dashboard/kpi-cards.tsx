@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -9,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import type { KpiData, Entity, Tariff, OperationalCost } from '@/types';
+import type { KpiData } from '@/types';
 import {
   useScenarioStore,
   initialScenarioState,
@@ -49,7 +48,7 @@ const KpiCard = ({ kpi }: { kpi: KpiData }) => {
 };
 
 export function KpiCards() {
-  const { scenarios, activeScenario, startYear } = useScenarioStore();
+  const { scenarios, activeScenario, startYear, endYear } = useScenarioStore();
   const { selectedService } = useChartFilterStore();
   const { entities } = useEntityStore();
   const { tariffs } = useTariffStore();
@@ -101,7 +100,7 @@ export function KpiCards() {
         if (serviceFilter === 'Tous les services') {
             return true; // Sum of all costs (GEOTER, SPANC, ..., and Global)
         }
-        return c.service === serviceFilter; // Only costs for the selected service
+        return c.service === serviceFilter;
       });
 
       relevantCosts.forEach((c) => {
@@ -132,12 +131,12 @@ export function KpiCards() {
     const currentValues = calculateAnnualValues(
       scenarios[activeScenario],
       selectedService,
-      startYear
+      endYear
     );
     const initialValues = calculateAnnualValues(
       initialScenarioState[activeScenario],
       selectedService,
-      startYear
+      endYear
     );
 
     const revenueChange =
@@ -171,7 +170,7 @@ export function KpiCards() {
 
     const kpis = [
       {
-        name: `Revenu Total${serviceName}`,
+        name: `Revenu Total${serviceName} (${endYear})`,
         value: `€${currentValues.revenue.toLocaleString('fr-FR', {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
@@ -192,7 +191,7 @@ export function KpiCards() {
         icon: Users,
       },
       {
-        name: `Coût Opérationnel${serviceName}`,
+        name: `Coût Opérationnel${serviceName} (${endYear})`,
         value: `€${currentValues.cost.toLocaleString('fr-FR', {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
@@ -210,6 +209,7 @@ export function KpiCards() {
     selectedService,
     costs,
     startYear,
+    endYear,
     entities,
     tariffs,
   ]);
