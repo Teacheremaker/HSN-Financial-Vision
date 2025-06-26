@@ -400,17 +400,41 @@ export default function EntitiesPage() {
     },
     {
         accessorKey: 'type',
-        header: 'Type',
+        header: ({ column }) => (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Type
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+        ),
         cell: EditableCell,
     },
     {
         accessorKey: 'entityType',
-        header: "Type d'entité",
+        header: ({ column }) => (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Type d'entité
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+        ),
         cell: EditableCell,
     },
     {
       accessorKey: 'statut',
-      header: 'Statut',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Statut
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: EditableCell,
     },
     {
