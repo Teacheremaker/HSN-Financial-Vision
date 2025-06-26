@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -88,6 +89,10 @@ const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
                   <CommandItem
                     key={option.value}
                     value={option.value}
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }}
                     onSelect={(currentValue) => {
                       if (selected.includes(currentValue)) {
                         onChange(selected.filter((item) => item !== currentValue));
