@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ArrowDownRight, ArrowUpRight, DollarSign, Users, TrendingUp } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, DollarSign, Users } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -64,13 +64,10 @@ export function KpiCards() {
         // Calculate new values
         const newRevenue = baseRevenue * adoptionFactor * priceFactor;
         const newCost = baseCost * indexationFactor;
-        const newRoi = baseCost > 0 ? (newRevenue - newCost) / newCost * 100 : 0;
-        const baseRoiValue = baseCost > 0 ? (baseRevenue - baseCost) / baseCost * 100 : 0;
-
+        
         const revenueChange = ((newRevenue / baseRevenue) - 1) * 100;
         const adoptionChange = ((newAdoption / baseAdoption) - 1) * 100;
         const costChange = ((newCost / baseCost) - 1) * 100;
-        const roiChange = baseRoiValue > 0 ? ((newRoi / baseRoiValue) - 1) * 100 : (newRoi > 0 ? Infinity : 0);
         
         const formatChange = (val: number) => `${val >= 0 ? '+' : ''}${val.toFixed(1)}%`;
 
@@ -90,13 +87,6 @@ export function KpiCards() {
                 icon: Users,
             },
             {
-                name: "ROI Projeté",
-                value: `${newRoi.toFixed(1)}%`,
-                change: formatChange(roiChange),
-                changeType: newRoi >= baseRoiValue ? 'increase' : 'decrease',
-                icon: TrendingUp,
-            },
-            {
                 name: "Coût Opérationnel",
                 value: `€${newCost.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
                 change: formatChange(costChange),
@@ -108,7 +98,7 @@ export function KpiCards() {
     }, [scenarios, activeScenario]);
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {dynamicKpiData.map((kpi) => (
                 <KpiCard key={kpi.name} kpi={kpi} />
             ))}

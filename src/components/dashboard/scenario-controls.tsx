@@ -1,5 +1,7 @@
+
 "use client";
 
+import { useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -17,8 +19,9 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { useScenarioStore, type Scenarios, SERVICES } from "@/hooks/use-scenario-store";
+import { useScenarioStore, type Scenarios, SERVICES, initialScenarioState } from "@/hooks/use-scenario-store";
 import { Input } from "@/components/ui/input";
+import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 const ParameterSlider = ({
   label,
@@ -96,6 +99,65 @@ const ScenarioTab = ({ scenarioName }: { scenarioName: keyof Scenarios }) => {
   );
 };
 
+const RoiCard = () => {
+    const { scenarios, activeScenario } = useScenarioStore();
+
+    const roiData = useMemo(() => {
+        const currentScenario = scenarios[activeScenario];
+        const initialScenario = initialScenarioState[activeScenario];
+
+        const currentAdoptionRates = Object.values(currentScenario.adoptionRates);
+        const newAdoption = currentAdoptionRates.reduce((a, b) => a + b, 0) / currentAdoptionRates.length;
+
+        const initialAdoptionRates = Object.values(initialScenario.adoptionRates);
+        const baseAdoption = initialAdoptionRates.reduce((a, b) => a + b, 0) / initialAdoptionRates.length;
+        
+        const adoptionFactor = baseAdoption > 0 ? newAdoption / baseAdoption : 1;
+        
+        const priceFactor = (1 + currentScenario.priceIncrease / 100) / (1 + initialScenario.priceIncrease / 100);
+        const indexationFactor = (1 + currentScenario.indexationRate / 100) / (1 + initialScenario.indexationRate / 100);
+
+        const baseRevenue = 45231.89;
+        const baseCost = 8750.00;
+
+        const newRevenue = baseRevenue * adoptionFactor * priceFactor;
+        const newCost = baseCost * indexationFactor;
+        const newRoi = baseCost > 0 ? (newRevenue - newCost) / newCost * 100 : 0;
+        const baseRoiValue = baseCost > 0 ? (baseRevenue - baseCost) / baseCost * 100 : 0;
+
+        const roiChange = newRoi - baseRoiValue;
+        
+        const formatChange = (val: number) => `${val >= 0 ? '+' : ''}${val.toFixed(1)} pts`;
+
+        const isGoodChange = newRoi >= baseRoiValue;
+        const ChangeIcon = isGoodChange ? ArrowUpRight : ArrowDownRight;
+        const changeColor = isGoodChange ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500';
+
+        return {
+            value: `${newRoi.toFixed(1)}%`,
+            change: formatChange(roiChange),
+            changeColor,
+            ChangeIcon,
+        };
+    }, [scenarios, activeScenario]);
+
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">ROI Projeté</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{roiData.value}</div>
+                <p className={`text-xs ${roiData.changeColor} flex items-center`}>
+                    <roiData.ChangeIcon className="h-3 w-3 mr-1" />
+                    {roiData.change} depuis le scénario initial
+                </p>
+            </CardContent>
+        </Card>
+    );
+};
+
 export function ScenarioControls() {
   const { activeScenario, setActiveScenario, startYear, setStartYear, endYear, setEndYear } = useScenarioStore();
 
@@ -162,17 +224,10 @@ export function ScenarioControls() {
           </TabsContent>
         </Tabs>
         <Separator />
-         <div className="space-y-4">
+         <div className="space-y-2">
             <h3 className="text-sm font-medium">Analyse de Sensibilité</h3>
-             <div className="grid gap-4 sm:grid-cols-2">
-                <Card className="p-4">
-                    <p className="text-xs text-muted-foreground">±10% Changement de Tarif</p>
-                    <p className="text-lg font-bold text-green-600 dark:text-green-500">+€1.2M</p>
-                </Card>
-                <Card className="p-4">
-                    <p className="text-xs text-muted-foreground">±1 an Décalage d'Adhésion</p>
-                    <p className="text-lg font-bold text-red-600 dark:text-red-500">-€0.8M</p>
-                </Card>
+             <div className="pt-2">
+                <RoiCard />
              </div>
         </div>
       </CardContent>
