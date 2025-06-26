@@ -73,7 +73,6 @@ export function MainChart() {
   }, []);
 
   const chartData = useMemo(() => {
-    const currentScenario = scenario;
     const operationalCosts = costs.filter(c => c.category !== 'À amortir');
 
     return years.map(year => {
@@ -81,7 +80,7 @@ export function MainChart() {
 
       // --- Cost Calculation ---
       let yearTotalCost = 0;
-      const indexationRate = currentScenario.indexationRate / 100;
+      const indexationRate = scenario.indexationRate / 100;
       const numYearsIndexed = year > startYear ? year - startYear : 0;
       
       const relevantCosts = operationalCosts.filter(cost => {
@@ -107,10 +106,9 @@ export function MainChart() {
       dataPoint.cost = Math.round(yearTotalCost / 1000);
 
       // --- Revenue Calculation ---
-      const priceIncreaseFactor = Math.pow(1 + (currentScenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
+      const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
       
       SERVICES.forEach(service => {
-        dataPoint[service] = 0;
         let serviceRevenue = 0;
         
         entities.forEach(entity => {
@@ -124,7 +122,7 @@ export function MainChart() {
 
         const serviceKey = service as keyof AdoptionRates;
         const initialAdoptionRate = initialScenarioState.adoptionRates[serviceKey];
-        const currentAdoptionRate = currentScenario.adoptionRates[serviceKey];
+        const currentAdoptionRate = scenario.adoptionRates[serviceKey];
         const adoptionFactor = initialAdoptionRate > 0 ? currentAdoptionRate / initialAdoptionRate : 1;
 
         dataPoint[service] = Math.round((serviceRevenue * adoptionFactor * priceIncreaseFactor) / 1000);
