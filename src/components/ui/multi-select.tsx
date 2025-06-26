@@ -79,7 +79,7 @@ const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-          <Command>
+          <Command key={selected.join(",")}>
             <CommandInput placeholder="Rechercher..." />
             <CommandList>
               <CommandEmpty>Aucune option trouvée.</CommandEmpty>
