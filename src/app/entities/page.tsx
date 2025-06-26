@@ -56,7 +56,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/layout/header';
-import type { Entity, ServiceSubscription } from '@/types';
+import type { Entity, ServiceSubscription, EntityType } from '@/types';
 import {
   Select,
   SelectContent,
@@ -118,6 +118,22 @@ const EditableCell = ({ getValue, row, column, table }) => {
                 </SelectContent>
             </Select>
         )
+    case 'entityType':
+        return (
+            <Select value={initialValue ?? 'Commune'} onValueChange={onUpdate}>
+                <SelectTrigger className="h-8">
+                    <SelectValue placeholder="Type d'entité" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="Commune">Commune</SelectItem>
+                    <SelectItem value="Syndicat">Syndicat</SelectItem>
+                    <SelectItem value="Communauté de communes">Communauté de communes</SelectItem>
+                    <SelectItem value="Communauté d'agglo">Communauté d'agglo</SelectItem>
+                    <SelectItem value="Département">Département</SelectItem>
+                    <SelectItem value="Autre">Autre</SelectItem>
+                </SelectContent>
+            </Select>
+        );
     case 'statut':
         return (
             <Select value={initialValue} onValueChange={onUpdate}>
@@ -194,7 +210,7 @@ const EditableCell = ({ getValue, row, column, table }) => {
 };
 
 const generateCsv = (data: Entity[]): string => {
-    const headers = ['nom', 'population', 'type', 'statut', 'services'];
+    const headers = ['nom', 'population', 'type', 'entityType', 'statut', 'services'];
     const csvRows = [headers.join(',')];
     const quote = (field: any) => {
         const stringField = String(field);
@@ -210,6 +226,7 @@ const generateCsv = (data: Entity[]): string => {
             quote(entity.nom),
             quote(entity.population),
             quote(entity.type),
+            quote(entity.entityType || 'Commune'),
             quote(entity.statut),
             quote(servicesString)
         ].join(',');
@@ -218,6 +235,8 @@ const generateCsv = (data: Entity[]): string => {
 
     return csvRows.join('\n');
 };
+
+const validEntityTypes: EntityType[] = ['Commune', 'Syndicat', 'Communauté de communes', 'Communauté d\'agglo', 'Département', 'Autre'];
 
 const parseCsv = (csvText: string): Entity[] => {
     const lines = csvText.trim().split('\n').filter(line => !line.startsWith('#') && line.trim() !== '');
@@ -253,11 +272,14 @@ const parseCsv = (csvText: string): Entity[] => {
 
         const statut: 'Actif' | 'Inactif' = services.length > 0 ? 'Actif' : (rowData.statut === 'Actif' ? 'Actif' : 'Inactif');
 
+        const entityType = validEntityTypes.includes(rowData.entityType as any) ? rowData.entityType as EntityType : 'Commune';
+
         return {
             id: rowData.id || `ENT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             nom: rowData.nom || 'Sans Nom',
             population: parseInt(rowData.population as any, 10) || 0,
             type: rowData.type === 'Fondatrice' ? 'Fondatrice' : 'Utilisatrice',
+            entityType,
             statut,
             services: services,
         };
@@ -292,9 +314,10 @@ export default function EntitiesPage() {
   };
 
   const handleExportTemplate = () => {
-    const headers = "nom,population,type,statut,services";
-    const example = "# La colonne 'id' est optionnelle et sera générée automatiquement si absente.\n# Séparez les services par un point-virgule (;) et l'année par un deux-points (:).\n# Exemple pour la colonne services : \"GEOTER:2024;SPANC:2025\"";
-    const csvString = `${headers}\n${example}`;
+    const headers = "nom,population,type,entityType,statut,services";
+    const example1 = "# La colonne 'id' est optionnelle et sera générée automatiquement si absente.\n# Séparez les services par un point-virgule (;) et l'année par un deux-points (:).\n# Exemple pour la colonne services : \"GEOTER:2024;SPANC:2025\"";
+    const example2 = "# Les valeurs possibles pour entityType sont : Commune, Syndicat, Communauté de communes, Communauté d'agglo, Département, Autre.";
+    const csvString = `${headers}\n${example1}\n${example2}`;
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -341,6 +364,7 @@ export default function EntitiesPage() {
       nom: "Nouvelle collectivité",
       population: 0,
       type: "Utilisatrice",
+      entityType: "Commune",
       statut: "Inactif",
       services: [],
     });
@@ -377,6 +401,11 @@ export default function EntitiesPage() {
     {
         accessorKey: 'type',
         header: 'Type',
+        cell: EditableCell,
+    },
+    {
+        accessorKey: 'entityType',
+        header: "Type d'entité",
         cell: EditableCell,
     },
     {
