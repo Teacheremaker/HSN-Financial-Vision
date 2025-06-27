@@ -63,12 +63,19 @@ export function KpiCards() {
   const { tariffs } = useTariffStore();
   const { costs } = useCostStore();
   const [revenueYear, setRevenueYear] = useState(startYear);
+  const [costYear, setCostYear] = useState(startYear);
 
   useEffect(() => {
     if (revenueYear < startYear || revenueYear > endYear) {
       setRevenueYear(startYear);
     }
   }, [revenueYear, startYear, endYear]);
+
+  useEffect(() => {
+    if (costYear < startYear || costYear > endYear) {
+      setCostYear(startYear);
+    }
+  }, [costYear, startYear, endYear]);
 
   const dynamicKpiData = useMemo(() => {
     const operationalCosts = costs.filter((c) => c.category !== 'À amortir');
@@ -118,29 +125,32 @@ export function KpiCards() {
       // --- Cost ---
       const indexationRate = scenario.indexationRate / 100;
       const numYearsIndexed = year > startYear ? year - startYear : 0;
+      const indexationFactor = Math.pow(1 + indexationRate, numYearsIndexed);
 
-      const relevantCosts = operationalCosts.filter((c) => {
+      const costsForService = operationalCosts.filter((c) => {
         if (serviceFilter === 'Tous les services') return true;
-        // For a specific service, include ONLY its direct costs.
         return c.service === serviceFilter;
       });
+      
+      const projectedCosts = costsForService.map(c => {
+          let displayedAnnualCost = c.annualCost;
 
-      relevantCosts.forEach((c) => {
-        const costInflationFactor =
-          c.category === 'Fixe' || c.category === 'Variable'
-            ? Math.pow(1 + indexationRate, numYearsIndexed)
-            : 1;
-
-        if (c.category === 'Amortissement') {
-          const start = c.amortizationStartYear ?? 0;
-          const duration = c.amortizationDuration ?? 0;
-          if (duration > 0 && year >= start && year < start + duration) {
-            cost += c.annualCost;
+          if ((c.category === 'Fixe' || c.category === 'Variable')) {
+              displayedAnnualCost *= indexationFactor;
           }
-        } else {
-          cost += c.annualCost * costInflationFactor;
-        }
+          
+          if (c.category === 'Amortissement') {
+              const start = c.amortizationStartYear ?? 0;
+              const duration = c.amortizationDuration ?? 0;
+              if (duration === 0 || year < start || year >= start + duration) {
+                  displayedAnnualCost = 0;
+              }
+          }
+          
+          return { displayedAnnualCost };
       });
+      
+      cost = projectedCosts.reduce((sum, c) => sum + (c.displayedAnnualCost || 0), 0);
 
       return { revenue, cost };
     };
@@ -173,13 +183,13 @@ export function KpiCards() {
       selectedService,
       revenueYear
     );
+    const currentValuesForCostYear = calculateAnnualValues(
+      scenario,
+      selectedService,
+      costYear
+    );
     const initialValuesForStart = calculateAnnualValues(
       initialScenarioState,
-      selectedService,
-      startYear
-    );
-    const currentValuesForStart = calculateAnnualValues(
-      scenario,
       selectedService,
       startYear
     );
@@ -197,10 +207,11 @@ export function KpiCards() {
       revenueChange >= 0 ? '+' : ''
     }${revenueChange.toFixed(1)}% depuis le scénario initial`;
 
+    // Cost Change
     const costChange =
       initialValuesForStart.cost > 0
-        ? (currentValuesForStart.cost / initialValuesForStart.cost - 1) * 100
-        : currentValuesForStart.cost > 0
+        ? (currentValuesForCostYear.cost / initialValuesForStart.cost - 1) * 100
+        : currentValuesForCostYear.cost > 0
         ? 100
         : 0;
     const costChangeText = `${costChange >= 0 ? '+' : ''}${costChange.toFixed(
@@ -260,6 +271,40 @@ export function KpiCards() {
         </div>
       </div>
     );
+    
+    const costKpiName = (
+      <div className="flex w-full items-center justify-between">
+        <span>
+          Coût Opérationnel{serviceName} ({costYear})
+        </span>
+        <div className="-mr-2 flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 rounded-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCostYear((y) => Math.max(startYear, y - 1));
+            }}
+            disabled={costYear <= startYear}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 rounded-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCostYear((y) => Math.min(endYear, y + 1));
+            }}
+            disabled={costYear >= endYear}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
 
     const kpis: KpiData[] = [
       {
@@ -283,14 +328,14 @@ export function KpiCards() {
         icon: Users,
       },
       {
-        name: `Coût Opérationnel${serviceName} (${startYear})`,
-        value: `€${currentValuesForStart.cost.toLocaleString('fr-FR', {
+        name: costKpiName,
+        value: `€${currentValuesForCostYear.cost.toLocaleString('fr-FR', {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         })}`,
         change: costChangeText,
         changeType:
-          currentValuesForStart.cost <= initialValuesForStart.cost
+          currentValuesForCostYear.cost <= initialValuesForStart.cost
             ? 'increase'
             : 'decrease', // Lower cost is good
         icon: ArrowDownRight,
@@ -307,6 +352,7 @@ export function KpiCards() {
     entities,
     tariffs,
     revenueYear,
+    costYear,
   ]);
 
   return (
