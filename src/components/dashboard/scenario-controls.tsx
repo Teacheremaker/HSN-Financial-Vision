@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -15,12 +15,13 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useScenarioStore, type AdoptionRates, SERVICES, initialScenarioState, type Scenario, type Service } from "@/hooks/use-scenario-store";
 import { Input } from "@/components/ui/input";
-import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { TrendingUp, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEntityStore } from "@/hooks/use-entity-store";
 import { useTariffStore } from "@/hooks/use-tariff-store";
 import { useCostStore } from "@/hooks/use-cost-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
+import { Button } from "@/components/ui/button";
 
 const ParameterSlider = ({
   label,
@@ -58,6 +59,13 @@ const RoiCard = () => {
     const { entities } = useEntityStore();
     const { tariffs } = useTariffStore();
     const { costs } = useCostStore();
+    const [roiYear, setRoiYear] = useState(endYear);
+
+    useEffect(() => {
+        if (roiYear < startYear || roiYear > endYear) {
+            setRoiYear(endYear);
+        }
+    }, [roiYear, startYear, endYear]);
 
     const roiData = useMemo(() => {
         const currentScenario = scenario;
@@ -126,8 +134,8 @@ const RoiCard = () => {
             return { revenue, cost };
         }
 
-        const current = calculateValues(currentScenario, endYear, selectedService);
-        const initial = calculateValues(initialScenario, endYear, selectedService);
+        const current = calculateValues(currentScenario, roiYear, selectedService);
+        const initial = calculateValues(initialScenario, roiYear, selectedService);
         
         const newRoi = current.cost > 0 ? (current.revenue - current.cost) / current.cost * 100 : (current.revenue > 0 ? Infinity : 0);
         const baseRoiValue = initial.cost > 0 ? (initial.revenue - initial.cost) / initial.cost * 100 : (initial.revenue > 0 ? Infinity : 0);
@@ -157,12 +165,44 @@ const RoiCard = () => {
             ChangeIcon,
             serviceName,
         };
-    }, [scenario, costs, entities, tariffs, startYear, endYear, selectedService]);
+    }, [scenario, costs, entities, tariffs, startYear, endYear, selectedService, roiYear]);
 
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">ROI Projeté{roiData.serviceName} ({endYear})</CardTitle>
+                 <CardTitle className="text-sm font-medium w-full">
+                    <div className="flex w-full items-center justify-between">
+                        <span>
+                          ROI Projeté{roiData.serviceName} ({roiYear})
+                        </span>
+                        <div className="-mr-2 flex items-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRoiYear((y) => Math.max(startYear, y - 1));
+                            }}
+                            disabled={roiYear <= startYear}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRoiYear((y) => Math.min(endYear, y + 1));
+                            }}
+                            disabled={roiYear >= endYear}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                    </div>
+                </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
