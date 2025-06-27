@@ -2,6 +2,7 @@
 "use client"
 
 import { useMemo } from "react";
+import * as React from "react";
 import { ComposedChart, Bar, Line, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
@@ -21,7 +22,6 @@ import {
 import {
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart"
@@ -49,6 +49,48 @@ const chartConfig = {
 
 
 const servicesForFilter = ['Tous les services', ...SERVICES];
+
+const CustomTooltipContent = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+            <div className="rounded-lg border bg-background p-2.5 text-sm shadow-sm">
+                <div className="grid gap-1.5">
+                    <p className="font-medium">{label}</p>
+                    <div className="grid gap-1">
+                        {payload.map((pld: any) => (
+                            pld.value > 0 && (
+                            <div key={pld.dataKey} className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2.5 h-2.5 rounded-full" style={{backgroundColor: pld.color}} />
+                                    <span>{pld.name}</span>
+                                </div>
+                                <span className="font-medium text-right">
+                                    €{pld.value.toLocaleString('fr-FR')}k
+                                </span>
+                            </div>
+                            )
+                        ))}
+                    </div>
+                    <div className="my-1 border-t border-border" />
+                    <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Adhérents de base</span>
+                        <span className="font-medium">{data.baseAdherents}</span>
+                    </div>
+                    {data.projectedAdherents > 0 && (
+                        <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Adhérents projetés</span>
+                            <span className="font-medium">{data.projectedAdherents}</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    return null;
+};
+
 
 export function MainChart() {
   const { scenario, startYear, endYear } = useScenarioStore();
@@ -95,15 +137,19 @@ export function MainChart() {
       });
       dataPoint.cost = Math.round(yearTotalCost / 1000);
 
-      // --- Revenue Calculation ---
+      // --- Revenue & Adherent Calculation ---
       let yearBaseRevenue = 0;
       let yearAdoptionRevenue = 0;
+      const baseAdherentSet = new Set<string>();
+      let projectedAdherents = 0;
+      
       const servicesToCalculate = isAllServicesView ? SERVICES : (SERVICES.includes(selectedService as any) ? [selectedService as Service] : []);
       const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
 
       servicesToCalculate.forEach(service => {
         let baseRevenue = 0;
         let potentialRevenue = 0;
+        let potentialAdherentCount = 0;
 
         entities.forEach(entity => {
             if (entity.statut !== 'Actif') return;
@@ -112,8 +158,10 @@ export function MainChart() {
 
             if (subscription && year >= subscription.year) {
                 baseRevenue += price;
+                baseAdherentSet.add(entity.id);
             } else if (!subscription) {
                 potentialRevenue += price;
+                potentialAdherentCount++;
             }
         });
 
@@ -121,10 +169,13 @@ export function MainChart() {
         const adoptionRatePercent = scenario.adoptionRates[serviceKey];
         yearBaseRevenue += baseRevenue;
         yearAdoptionRevenue += potentialRevenue * (adoptionRatePercent / 100);
+        projectedAdherents += potentialAdherentCount * (adoptionRatePercent / 100);
       });
 
       dataPoint.baseRevenue = Math.round((yearBaseRevenue * priceIncreaseFactor) / 1000);
       dataPoint.adoptionRevenue = Math.round((yearAdoptionRevenue * priceIncreaseFactor) / 1000);
+      dataPoint.baseAdherents = baseAdherentSet.size;
+      dataPoint.projectedAdherents = Math.round(projectedAdherents);
 
       return dataPoint;
     }).sort((a,b) => a.year - b.year);
@@ -169,14 +220,14 @@ export function MainChart() {
               tickFormatter={(value) => `€${value}k`}
             />
             <ChartTooltip
-              content={<ChartTooltipContent />}
+              content={<CustomTooltipContent />}
             />
             <ChartLegend content={<ChartLegendContent />} />
             
-            <Bar dataKey="baseRevenue" fill="var(--color-baseRevenue)" stackId="revenue" />
-            <Bar dataKey="adoptionRevenue" fill="var(--color-adoptionRevenue)" radius={[4, 4, 0, 0]} stackId="revenue" />
+            <Bar dataKey="baseRevenue" fill="var(--color-baseRevenue)" stackId="revenue" name="Revenu de base" />
+            <Bar dataKey="adoptionRevenue" fill="var(--color-adoptionRevenue)" radius={[4, 4, 0, 0]} stackId="revenue" name="Revenu d'adoption" />
 
-            <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} />
+            <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} name="Coûts Opérationnels" />
           </ComposedChart>
         </ChartContainer>
       </CardContent>
