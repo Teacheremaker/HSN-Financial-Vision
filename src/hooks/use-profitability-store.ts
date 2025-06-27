@@ -14,7 +14,7 @@ type Actions = {
 
 export const useProfitabilityStore = create<State & Actions>((set) => ({
   selectedService: 'Tous les services',
-  viewMode: 'cumulative',
+  viewMode: 'comparative',
   setSelectedService: (service) => set({ selectedService: service }),
   setViewMode: (mode) => set(state => ({ ...state, viewMode: mode })),
 }));
