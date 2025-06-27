@@ -2,7 +2,7 @@
 import type { MultiSelectOption as MultiSelectOptionPrimitive } from "@/components/ui/multi-select";
 
 export type KpiData = {
-  name: string;
+  name: React.ReactNode;
   value: string;
   change: string;
   changeType: 'increase' | 'decrease';
