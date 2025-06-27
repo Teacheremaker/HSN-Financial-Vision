@@ -8,8 +8,9 @@
  * - OptimizeScenarioParametersOutput - Le type de retour pour la fonction optimizeScenarioParameters.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
+import axios from 'axios';
 
 const OptimizeScenarioParametersInputSchema = z.object({
   kpi: z
@@ -49,35 +50,69 @@ export async function optimizeScenarioParameters(
   return optimizeScenarioParametersFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'optimizeScenarioParametersPrompt',
-  input: {schema: OptimizeScenarioParametersInputSchema},
-  output: {schema: OptimizeScenarioParametersOutputSchema},
-  prompt: `Vous êtes un analyste financier expert. Votre objectif est de suggérer des valeurs de
-paramètres optimales pour divers leviers afin de maximiser un indicateur de
-performance clé (KPI) spécifié. Prenez en compte toutes les contraintes et
-les données historiques fournies.
-
-KPI à optimiser: {{{kpi}}}
-Leviers à ajuster: {{{levers}}}
-Contraintes: {{{constraints}}}
-Données historiques: {{{historicalData}}}
-
-Sur la base de ces informations, suggérez des valeurs de paramètres optimales
-pour les leviers et fournissez une justification pour vos suggestions.
-
-Affichez vos paramètres suggérés et votre justification au format JSON:
-{ "suggestedParameters": "...", "rationale": "..." }`,
-});
-
 const optimizeScenarioParametersFlow = ai.defineFlow(
   {
     name: 'optimizeScenarioParametersFlow',
     inputSchema: OptimizeScenarioParametersInputSchema,
     outputSchema: OptimizeScenarioParametersOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey || apiKey === "votre_clé_api_deepseek") {
+      throw new Error('La clé API DeepSeek (DEEPSEEK_API_KEY) n\'est pas configurée dans le fichier .env.');
+    }
+
+    const systemPrompt = `Vous êtes un analyste financier expert. Votre objectif est de suggérer des valeurs de paramètres optimales pour divers leviers afin de maximiser un indicateur de performance clé (KPI) spécifié. Prenez en compte toutes les contraintes et les données historiques fournies.
+Affichez vos paramètres suggérés et votre justification au format JSON valide:
+{ "suggestedParameters": "...", "rationale": "..." }
+Assurez-vous que la sortie est uniquement le JSON, sans texte ou formatage supplémentaire.`;
+
+    const userPrompt = `
+KPI à optimiser: ${input.kpi}
+Leviers à ajuster: ${input.levers}
+${input.constraints ? `Contraintes: ${input.constraints}` : ''}
+${input.historicalData ? `Données historiques: ${input.historicalData}` : ''}
+`;
+
+    try {
+      const response = await axios.post(
+        'https://api.deepseek.com/v1/chat/completions',
+        {
+          model: 'deepseek-chat',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const content = response.data.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('La réponse de l\'API DeepSeek est vide ou malformée.');
+      }
+      
+      const parsedContent = JSON.parse(content);
+      const validationResult = OptimizeScenarioParametersOutputSchema.safeParse(parsedContent);
+
+      if (!validationResult.success) {
+        console.error("Erreur de validation Zod:", validationResult.error);
+        throw new Error("La réponse de l'API DeepSeek ne correspond pas au format attendu.");
+      }
+
+      return validationResult.data;
+
+    } catch (error: any) {
+      console.error('Erreur lors de l\'appel à l\'API DeepSeek:', error.response?.data || error.message);
+      if (error.response?.status === 401) {
+        throw new Error('La clé API DeepSeek est invalide ou a expiré.');
+      }
+      throw new Error('Une erreur est survenue lors de la communication avec l\'IA DeepSeek.');
+    }
   }
 );
