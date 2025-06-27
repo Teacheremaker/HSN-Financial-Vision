@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useMemo } from "react";
@@ -32,9 +33,13 @@ import { useCostStore } from "@/hooks/use-cost-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
 
 const chartConfig = {
-  revenue: {
-    label: "Revenu",
+  baseRevenue: {
+    label: "Revenu de base",
     color: "hsl(var(--chart-1))",
+  },
+  adoptionRevenue: {
+    label: "Revenu d'adoption",
+    color: "hsl(var(--chart-2))",
   },
   cost: {
     label: "Coûts Opérationnels",
@@ -69,15 +74,14 @@ export function MainChart() {
       let yearTotalCost = 0;
       const indexationRate = scenario.indexationRate / 100;
       const numYearsIndexed = year > startYear ? year - startYear : 0;
-      
+      const indexationFactor = Math.pow(1 + indexationRate, numYearsIndexed);
+
       const relevantCosts = operationalCosts.filter(cost => {
           if (isAllServicesView) return true;
           return cost.service === selectedService;
       });
 
       relevantCosts.forEach(cost => {
-        const costInflationFactor = (cost.category === 'Fixe' || cost.category === 'Variable') ? Math.pow(1 + indexationRate, numYearsIndexed) : 1;
-        
         if (cost.category === 'Amortissement') {
             const start = cost.amortizationStartYear ?? 0;
             const duration = cost.amortizationDuration ?? 0;
@@ -85,13 +89,15 @@ export function MainChart() {
                 yearTotalCost += cost.annualCost;
             }
         } else {
+            const costInflationFactor = (cost.category === 'Fixe' || cost.category === 'Variable') ? indexationFactor : 1;
             yearTotalCost += cost.annualCost * costInflationFactor;
         }
       });
       dataPoint.cost = Math.round(yearTotalCost / 1000);
 
       // --- Revenue Calculation ---
-      let yearTotalRevenue = 0;
+      let yearBaseRevenue = 0;
+      let yearAdoptionRevenue = 0;
       const servicesToCalculate = isAllServicesView ? SERVICES : (SERVICES.includes(selectedService as any) ? [selectedService as Service] : []);
       const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
 
@@ -113,10 +119,12 @@ export function MainChart() {
 
         const serviceKey = service as keyof AdoptionRates;
         const adoptionRatePercent = scenario.adoptionRates[serviceKey];
-        yearTotalRevenue += (baseRevenue + potentialRevenue * (adoptionRatePercent / 100));
+        yearBaseRevenue += baseRevenue;
+        yearAdoptionRevenue += potentialRevenue * (adoptionRatePercent / 100);
       });
 
-      dataPoint.revenue = Math.round((yearTotalRevenue * priceIncreaseFactor) / 1000);
+      dataPoint.baseRevenue = Math.round((yearBaseRevenue * priceIncreaseFactor) / 1000);
+      dataPoint.adoptionRevenue = Math.round((yearAdoptionRevenue * priceIncreaseFactor) / 1000);
 
       return dataPoint;
     }).sort((a,b) => a.year - b.year);
@@ -165,7 +173,8 @@ export function MainChart() {
             />
             <ChartLegend content={<ChartLegendContent />} />
             
-            <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="baseRevenue" fill="var(--color-baseRevenue)" stackId="revenue" />
+            <Bar dataKey="adoptionRevenue" fill="var(--color-adoptionRevenue)" radius={[4, 4, 0, 0]} stackId="revenue" />
 
             <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} />
           </ComposedChart>

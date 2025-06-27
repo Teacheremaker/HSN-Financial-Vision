@@ -3,7 +3,7 @@ import type { MultiSelectOption as MultiSelectOptionPrimitive } from "@/componen
 
 export type KpiData = {
   name: React.ReactNode;
-  value: string;
+  value: React.ReactNode;
   change: string;
   changeType: 'increase' | 'decrease';
   icon: React.ComponentType<{ className?: string }>;
@@ -67,3 +67,4 @@ export type Adherent = {
 };
 
 export type MultiSelectOption = MultiSelectOptionPrimitive;
+

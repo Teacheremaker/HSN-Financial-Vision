@@ -85,7 +85,8 @@ export function KpiCards() {
       serviceFilter: string,
       year: number
     ) => {
-      let revenue = 0;
+      let baseRevenue = 0;
+      let adoptionRevenue = 0;
       let cost = 0;
 
       // --- Revenue ---
@@ -101,8 +102,8 @@ export function KpiCards() {
           : [];
 
       servicesForRevenue.forEach((service) => {
-        let baseRevenue = 0;
-        let potentialRevenue = 0;
+        let serviceBaseRevenue = 0;
+        let servicePotentialRevenue = 0;
 
         entities.forEach((entity) => {
           if (entity.statut !== 'Actif') return;
@@ -110,17 +111,20 @@ export function KpiCards() {
           const subscription = entity.services.find((s) => s.name === service);
 
           if (subscription && year >= subscription.year) {
-            baseRevenue += price;
+            serviceBaseRevenue += price;
           } else if (!subscription) {
-            potentialRevenue += price;
+            servicePotentialRevenue += price;
           }
         });
 
         const serviceKey = service as keyof AdoptionRates;
         const adoptionRatePercent = scenario.adoptionRates[serviceKey];
-        revenue += baseRevenue + potentialRevenue * (adoptionRatePercent / 100);
+        baseRevenue += serviceBaseRevenue;
+        adoptionRevenue += servicePotentialRevenue * (adoptionRatePercent / 100);
       });
-      revenue *= priceIncreaseFactor;
+      
+      baseRevenue *= priceIncreaseFactor;
+      adoptionRevenue *= priceIncreaseFactor;
 
       // --- Cost ---
       const indexationRate = scenario.indexationRate / 100;
@@ -152,7 +156,7 @@ export function KpiCards() {
       
       cost = projectedCosts.reduce((sum, c) => sum + (c.displayedAnnualCost || 0), 0);
 
-      return { revenue, cost };
+      return { revenue: baseRevenue + adoptionRevenue, baseRevenue, adoptionRevenue, cost };
     };
 
     const calculateSubscriptionRate = (
@@ -197,12 +201,11 @@ export function KpiCards() {
     // Revenue Change
     const revenueChange =
       initialValuesForStart.revenue > 0
-        ? (currentValuesForRevenueYear.revenue / initialValuesForStart.revenue -
-            1) *
-          100
-        : currentValuesForRevenueYear.revenue > 0
+        ? ((currentValuesForRevenueYear.baseRevenue + currentValuesForRevenueYear.adoptionRevenue) / initialValuesForStart.revenue - 1) * 100
+        : (currentValuesForRevenueYear.baseRevenue + currentValuesForRevenueYear.adoptionRevenue) > 0
         ? 100
         : 0;
+
     const revenueChangeText = `${
       revenueChange >= 0 ? '+' : ''
     }${revenueChange.toFixed(1)}% depuis le scénario initial`;
@@ -309,15 +312,26 @@ export function KpiCards() {
     const kpis: KpiData[] = [
       {
         name: revenueKpiName,
-        value: `€${currentValuesForRevenueYear.revenue.toLocaleString(
-          'fr-FR',
-          {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          }
-        )}`,
+        value: (
+          <div className="flex items-baseline gap-2">
+            <span>
+              €{(currentValuesForRevenueYear.baseRevenue + currentValuesForRevenueYear.adoptionRevenue).toLocaleString('fr-FR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
+            </span>
+            {currentValuesForRevenueYear.adoptionRevenue > 1 && (
+              <span className="text-sm font-medium text-green-600 dark:text-green-500">
+                (+€{currentValuesForRevenueYear.adoptionRevenue.toLocaleString('fr-FR', {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })})
+              </span>
+            )}
+          </div>
+        ),
         change: revenueChangeText,
-        changeType: 'increase',
+        changeType: revenueChange >= 0 ? 'increase' : 'decrease',
         icon: DollarSign,
       },
       {
