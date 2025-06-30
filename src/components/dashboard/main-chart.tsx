@@ -101,9 +101,11 @@ export function MainChart() {
   const chartConfig = useMemo(() => {
     if (isAllServicesView) {
         return {
-          baseRevenue: { label: "Revenu de base", color: "hsl(var(--chart-1))" },
-          adoptionRevenue: { label: "Revenu d'adoption", color: "hsl(var(--chart-2))" },
-          cost: { label: "Coûts opérationnels", color: "hsl(var(--chart-5))" },
+          GEOTER: { label: "GEOTER", color: "hsl(var(--chart-1))" },
+          SPANC: { label: "SPANC", color: "hsl(var(--chart-2))" },
+          ROUTE: { label: "ROUTE", color: "hsl(var(--chart-3))" },
+          ADS: { label: "ADS", color: "hsl(var(--chart-5))" },
+          cost: { label: "Coûts opérationnels", color: "hsl(var(--chart-4))" },
         };
     }
 
@@ -120,7 +122,7 @@ export function MainChart() {
         },
         cost: {
             label: "Coûts opérationnels",
-            color: "hsl(var(--chart-5))",
+            color: "hsl(var(--chart-4))",
         },
     };
   }, [selectedService, isAllServicesView]);
@@ -157,44 +159,63 @@ export function MainChart() {
       dataPoint.cost = Math.round(yearTotalCost / 1000);
 
       // --- Revenue & Adherent Calculation ---
-      let yearBaseRevenue = 0;
-      let yearAdoptionRevenue = 0;
+      const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
       const baseAdherentSet = new Set<string>();
       let projectedAdherents = 0;
       
-      const servicesToCalculate = isAllServicesView ? SERVICES : (SERVICES.includes(selectedService as any) ? [selectedService as Service] : []);
-      const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
+      if (isAllServicesView) {
+        SERVICES.forEach(service => {
+            let serviceBaseRevenue = 0;
+            let servicePotentialRevenue = 0;
+            let potentialAdherentCount = 0;
+            
+            entities.forEach(entity => {
+                if (entity.statut !== 'Actif') return;
+                const price = getTariffPriceForEntity(entity, service, tariffs);
+                const subscription = entity.services.find(s => s.name === service);
+                if (subscription && year >= subscription.year) {
+                    serviceBaseRevenue += price;
+                    baseAdherentSet.add(entity.id);
+                } else {
+                    servicePotentialRevenue += price;
+                    if (!subscription) potentialAdherentCount++;
+                }
+            });
+            const adoptionRate = scenario.adoptionRates[service as keyof AdoptionRates] / 100;
+            const serviceAdoptionRevenue = servicePotentialRevenue * adoptionRate;
+            projectedAdherents += potentialAdherentCount * adoptionRate;
 
-      servicesToCalculate.forEach(service => {
+            const totalServiceRevenue = serviceBaseRevenue + serviceAdoptionRevenue;
+            dataPoint[service] = Math.round((totalServiceRevenue * priceIncreaseFactor) / 1000);
+        });
+      } else { // Single service view
         let baseRevenue = 0;
         let potentialRevenue = 0;
         let potentialAdherentCount = 0;
+        const service = selectedService as Service;
 
         entities.forEach(entity => {
             if (entity.statut !== 'Actif') return;
             const price = getTariffPriceForEntity(entity, service, tariffs);
             const subscription = entity.services.find(s => s.name === service);
 
-            if (subscription) {
-                if (year >= subscription.year) {
-                    baseRevenue += price;
-                    baseAdherentSet.add(entity.id);
-                }
+            if (subscription && year >= subscription.year) {
+                baseRevenue += price;
+                baseAdherentSet.add(entity.id);
             } else {
                 potentialRevenue += price;
-                potentialAdherentCount++;
+                if (!subscription) potentialAdherentCount++;
             }
         });
 
-        const serviceKey = service as keyof AdoptionRates;
-        const adoptionRatePercent = scenario.adoptionRates[serviceKey];
-        yearBaseRevenue += baseRevenue;
-        yearAdoptionRevenue += potentialRevenue * (adoptionRatePercent / 100);
-        projectedAdherents += potentialAdherentCount * (adoptionRatePercent / 100);
-      });
+        const adoptionRate = scenario.adoptionRates[service] / 100;
+        const adoptionRevenue = potentialRevenue * adoptionRate;
+        projectedAdherents = potentialAdherentCount * adoptionRate;
 
-      dataPoint.baseRevenue = Math.round((yearBaseRevenue * priceIncreaseFactor) / 1000);
-      dataPoint.adoptionRevenue = Math.round((yearAdoptionRevenue * priceIncreaseFactor) / 1000);
+        dataPoint.baseRevenue = Math.round((baseRevenue * priceIncreaseFactor) / 1000);
+        dataPoint.adoptionRevenue = Math.round((adoptionRevenue * priceIncreaseFactor) / 1000);
+      }
+
       dataPoint.baseAdherents = baseAdherentSet.size;
       dataPoint.projectedAdherents = Math.round(projectedAdherents);
 
@@ -245,8 +266,22 @@ export function MainChart() {
             />
             <ChartLegend content={<ChartLegendContent />} />
             
-            <Bar dataKey="baseRevenue" fill="var(--color-baseRevenue)" stackId="revenue" name="Revenu de base" />
-            <Bar dataKey="adoptionRevenue" fill="var(--color-adoptionRevenue)" radius={[4, 4, 0, 0]} stackId="revenue" name="Revenu d'adoption" />
+            {isAllServicesView ? (
+              SERVICES.map((service) => (
+                <Bar 
+                    key={service} 
+                    dataKey={service} 
+                    fill={`var(--color-${service})`} 
+                    stackId="revenue" 
+                    name={service}
+                />
+              ))
+            ) : (
+                <>
+                    <Bar dataKey="baseRevenue" fill="var(--color-baseRevenue)" stackId="revenue" name="Revenu de base" />
+                    <Bar dataKey="adoptionRevenue" fill="var(--color-adoptionRevenue)" radius={[4, 4, 0, 0]} stackId="revenue" name="Revenu d'adoption" />
+                </>
+            )}
 
             <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} name="Coûts opérationnels" />
           </ComposedChart>
