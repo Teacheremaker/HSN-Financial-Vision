@@ -156,9 +156,11 @@ export function MainChart() {
             const price = getTariffPriceForEntity(entity, service, tariffs);
             const subscription = entity.services.find(s => s.name === service);
 
-            if (subscription && year >= subscription.year) {
-                baseRevenue += price;
-                baseAdherentSet.add(entity.id);
+            if (subscription) {
+                if (year >= subscription.year) {
+                    baseRevenue += price;
+                    baseAdherentSet.add(entity.id);
+                }
             } else {
                 potentialRevenue += price;
                 potentialAdherentCount++;
