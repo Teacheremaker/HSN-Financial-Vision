@@ -99,7 +99,7 @@ Gestion des charges de fonctionnement.
 
 ## 4. Spécifications Techniques
 
--   **Framework Frontend** : Next.js 15 (App Router)
+-   **Framework Frontend** : Next.js 14 (App Router)
 -   **Langage** : TypeScript
 -   **Styling** : Tailwind CSS avec des composants de UI de ShadCN
 -   **Gestion d'état (State Management)** : Zustand
