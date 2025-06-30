@@ -80,10 +80,10 @@ export default function RevenuesPage() {
                         const price = getTariffPriceForEntity(entity, service, tariffs);
                         const subscription = entity.services.find(s => s.name === service);
     
-                        if (subscription) {
-                            if (year >= subscription.year) {
-                                serviceBaseRevenue += price;
-                            }
+                        const isBaseAdherent = subscription && year >= subscription.year;
+    
+                        if (isBaseAdherent) {
+                            serviceBaseRevenue += price;
                         } else {
                             servicePotentialRevenue += price;
                         }

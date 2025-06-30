@@ -99,10 +99,11 @@ const RoiCard = () => {
                     if (entity.statut !== 'Actif') return;
                     const price = getTariffPriceForEntity(entity, service, tariffs);
                     const subscription = entity.services.find(s => s.name === service);
-                    if (subscription) {
-                        if (year >= subscription.year) {
-                            baseRevenue += price;
-                        }
+                    
+                    const isBaseAdherent = subscription && year >= subscription.year;
+
+                    if (isBaseAdherent) {
+                        baseRevenue += price;
                     } else {
                         potentialRevenue += price;
                     }

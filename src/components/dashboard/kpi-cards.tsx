@@ -109,11 +109,11 @@ export function KpiCards() {
           if (entity.statut !== 'Actif') return;
           const price = getTariffPriceForEntity(entity, service, tariffs);
           const subscription = entity.services.find((s) => s.name === service);
+          
+          const isBaseAdherent = subscription && year >= subscription.year;
 
-          if (subscription) {
-              if (year >= subscription.year) {
-                serviceBaseRevenue += price;
-              }
+          if (isBaseAdherent) {
+            serviceBaseRevenue += price;
           } else {
             servicePotentialRevenue += price;
           }

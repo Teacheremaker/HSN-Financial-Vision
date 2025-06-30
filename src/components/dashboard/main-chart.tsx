@@ -165,14 +165,18 @@ export function MainChart() {
                 if (entity.statut !== 'Actif') return;
                 const price = getTariffPriceForEntity(entity, service, tariffs);
                 const subscription = entity.services.find(s => s.name === service);
-                if (subscription && year >= subscription.year) {
+                
+                const isBaseAdherent = subscription && year >= subscription.year;
+
+                if (isBaseAdherent) {
                     serviceBaseRevenue += price;
                     baseAdherentSet.add(entity.id);
-                } else if (!entity.services.some(s => s.name === service)) {
+                } else {
                     servicePotentialRevenue += price;
                     potentialAdherentCount++;
                 }
             });
+
             const adoptionRate = scenario.adoptionRates[service as keyof AdoptionRates] / 100;
             const serviceAdoptionRevenue = servicePotentialRevenue * adoptionRate;
             projectedAdherents += potentialAdherentCount * adoptionRate;
@@ -191,10 +195,12 @@ export function MainChart() {
             const price = getTariffPriceForEntity(entity, service, tariffs);
             const subscription = entity.services.find(s => s.name === service);
 
-            if (subscription && year >= subscription.year) {
+            const isBaseAdherent = subscription && year >= subscription.year;
+
+            if (isBaseAdherent) {
                 baseRevenue += price;
                 baseAdherentSet.add(entity.id);
-            } else if (!entity.services.some(s => s.name === service)) {
+            } else {
                 potentialRevenue += price;
                 potentialAdherentCount++;
             }
