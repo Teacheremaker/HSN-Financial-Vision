@@ -227,7 +227,7 @@ export default function CostsPage() {
         <main className="flex-1 space-y-4 p-4 md:p-8 pt-0">
             <Card>
                 <CardHeader>
-                    <CardTitle>Détail des Coûts par Service</CardTitle>
+                    <CardTitle>Détail des coûts par service</CardTitle>
                     <CardDescription>
                         Naviguez entre les services et les années pour voir les coûts projetés.
                     </CardDescription>
@@ -249,7 +249,7 @@ export default function CostsPage() {
                         </div>
                         <div className="grid gap-2 w-full flex-1">
                             <div className="flex justify-between items-center">
-                                <Label htmlFor="indexation-slider">Taux d'Indexation des Coûts</Label>
+                                <Label htmlFor="indexation-slider">Taux d'indexation des coûts</Label>
                                 <span className="text-sm font-medium">{scenario.indexationRate}%</span>
                             </div>
                             <Slider
