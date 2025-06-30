@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -53,6 +52,10 @@ const chartConfig = {
   spanc: { label: 'Recettes SPANC', color: 'hsl(var(--chart-2))' },
   route: { label: 'Recettes ROUTE', color: 'hsl(var(--chart-3))' },
   ads: { label: 'Recettes ADS', color: 'hsl(var(--chart-5))' },
+  cout_geoter: { label: 'Coût GEOTER', color: 'hsl(var(--chart-1))' },
+  cout_spanc: { label: 'Coût SPANC', color: 'hsl(var(--chart-2))' },
+  cout_route: { label: 'Coût ROUTE', color: 'hsl(var(--chart-3))' },
+  cout_ads: { label: 'Coût ADS', color: 'hsl(var(--chart-5))' },
 };
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -70,7 +73,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             </p>
           )}
            {payload.map((p, i) => (
-            p.dataKey.startsWith('recettes_') && (
+            (p.dataKey.startsWith('recettes_') || p.dataKey.startsWith('cout_')) && (
               <p key={i} style={{ color: p.color }}>
                 {p.name} : {p.value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
               </p>
@@ -101,21 +104,33 @@ export function ProfitabilityProjection() {
 
   const isComparativeMode = selectedService === 'Tous les services' && viewMode === 'comparative';
 
-  const annualCosts = React.useMemo(() => {
-    const serviceFilteredCosts = costs.filter(cost => {
-      if (selectedService === 'Tous les services') {
-        return true;
-      }
-      return cost.service === selectedService;
+  const costsByService = React.useMemo(() => {
+    const result: { [key: string]: number } = {};
+    const operationalCosts = costs.filter(
+      (c) =>
+        c.category === 'Fixe' ||
+        c.category === 'Variable' ||
+        c.category === 'Amortissement'
+    );
+    
+    allServices.forEach(service => {
+        result[service] = operationalCosts
+            .filter(c => c.service === service)
+            .reduce((sum, cost) => sum + cost.annualCost, 0);
     });
 
-    return serviceFilteredCosts.reduce((sum, cost) => {
-        if (cost.category === 'Fixe' || cost.category === 'Variable' || cost.category === 'Amortissement') {
-            return sum + cost.annualCost;
-        }
-        return sum;
-    }, 0);
-  }, [costs, selectedService]);
+    const globalCosts = operationalCosts.filter(c => c.service === 'Global').reduce((sum, cost) => sum + cost.annualCost, 0);
+    if (globalCosts > 0 && allServices.length > 0) {
+        const distributedGlobalCost = globalCosts / allServices.length;
+        allServices.forEach(service => {
+            result[service] += distributedGlobalCost;
+        });
+    }
+
+    result['Tous les services'] = Object.values(result).reduce((sum, cost) => sum + cost, 0);
+
+    return result;
+  }, [costs]);
 
   const chartData = React.useMemo(() => {
     const sortedEntities = [...entities]
@@ -131,6 +146,8 @@ export function ProfitabilityProjection() {
     
     const serviceRevenueAcc: { [key: string]: number } = {};
     SERVICES.forEach(s => serviceRevenueAcc[s.name] = 0);
+
+    const costForSelectedService = costsByService[selectedService] ?? costsByService['Tous les services'];
 
     for (let i = 0; i < sortedEntities.length; i++) {
       const entity = sortedEntities[i];
@@ -148,7 +165,7 @@ export function ProfitabilityProjection() {
           recettes = serviceRevenueAcc[selectedService] || 0;
       }
 
-      const resultat = recettes - annualCosts;
+      const resultat = recettes - costForSelectedService;
 
       const dataPoint: any = {
         adherentCount: i + 1,
@@ -160,13 +177,14 @@ export function ProfitabilityProjection() {
       if(isComparativeMode) {
         SERVICES.forEach(s => {
             dataPoint[`recettes_${s.id}`] = serviceRevenueAcc[s.name] || 0;
+            dataPoint[`cout_${s.id}`] = costsByService[s.name] || 0;
         })
       }
 
       data.push(dataPoint);
     }
     return data;
-  }, [entities, tariffs, selectedService, viewMode, isComparativeMode, annualCosts]);
+  }, [entities, tariffs, selectedService, viewMode, isComparativeMode, costsByService]);
 
   const breakEvenPoint = React.useMemo(() => {
     const point = chartData.find(d => d.resultat >= 0);
@@ -229,17 +247,36 @@ export function ProfitabilityProjection() {
                     </>
                 )}
 
-                {isComparativeMode && (
-                    SERVICES.map(s => (
-                        <Line key={s.id} yAxisId="left" type="monotone" dataKey={`recettes_${s.id}`} name={chartConfig[s.id as keyof typeof chartConfig].label} stroke={chartConfig[s.id as keyof typeof chartConfig].color} strokeWidth={2} dot={false}/>
-                    ))
-                )}
+                {isComparativeMode &&
+                  SERVICES.flatMap((s) => [
+                    <Line
+                      key={`recettes_${s.id}`}
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey={`recettes_${s.id}`}
+                      name={chartConfig[s.id as keyof typeof chartConfig].label}
+                      stroke={chartConfig[s.id as keyof typeof chartConfig].color}
+                      strokeWidth={2}
+                      dot={false}
+                    />,
+                    <Line
+                      key={`cout_${s.id}`}
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey={`cout_${s.id}`}
+                      name={chartConfig[`cout_${s.id}` as keyof typeof chartConfig].label}
+                      stroke={chartConfig[s.id as keyof typeof chartConfig].color}
+                      strokeWidth={2}
+                      dot={false}
+                      strokeDasharray="5 5"
+                    />,
+                  ])}
             </ComposedChart>
         </ChartContainer>
 
       </CardContent>
       <CardFooter>
-        <p className="text-sm text-muted-foreground">{breakEvenPoint}</p>
+        {!isComparativeMode && <p className="text-sm text-muted-foreground">{breakEvenPoint}</p>}
       </CardFooter>
     </Card>
   );
