@@ -159,7 +159,7 @@ export function MainChart() {
             if (subscription && year >= subscription.year) {
                 baseRevenue += price;
                 baseAdherentSet.add(entity.id);
-            } else if (!subscription) {
+            } else {
                 potentialRevenue += price;
                 potentialAdherentCount++;
             }

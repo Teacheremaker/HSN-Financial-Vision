@@ -112,7 +112,7 @@ export function KpiCards() {
 
           if (subscription && year >= subscription.year) {
             serviceBaseRevenue += price;
-          } else if (!subscription) {
+          } else {
             servicePotentialRevenue += price;
           }
         });
@@ -238,7 +238,7 @@ export function KpiCards() {
       selectedService === 'Tous les services' ? '' : ` ${selectedService}`;
     const adoptionTitle =
       selectedService === 'Tous les services'
-        ? "Taux d'adoption (Global)"
+        ? "Taux d'adoption (global)"
         : `Taux d'adoption ${selectedService}`;
 
     const revenueKpiName = (

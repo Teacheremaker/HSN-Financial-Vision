@@ -91,7 +91,7 @@ const RoiCard = () => {
                     const subscription = entity.services.find(s => s.name === service);
                     if (subscription && year >= subscription.year) {
                         baseRevenue += price;
-                    } else if (!subscription) {
+                    } else {
                         potentialRevenue += price;
                     }
                 });
