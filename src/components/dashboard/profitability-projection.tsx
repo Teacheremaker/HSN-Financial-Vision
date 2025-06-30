@@ -28,11 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
 import { ChartContainer } from '@/components/ui/chart';
 import { useProfitabilityStore } from '@/hooks/use-profitability-store';
 import { useEntityStore } from '@/hooks/use-entity-store';
@@ -90,12 +85,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   };
 
 export function ProfitabilityProjection() {
-  const { selectedService, setSelectedService, viewMode, setViewMode } = useProfitabilityStore();
+  const { selectedService, setSelectedService } = useProfitabilityStore();
   const { entities } = useEntityStore();
   const { tariffs } = useTariffStore();
   const { costs } = useCostStore();
 
-  const isComparativeMode = selectedService === 'Tous les services' && viewMode === 'comparative';
+  const isComparativeMode = selectedService === 'Tous les services';
 
   const chartConfig = React.useMemo(() => {
     const serviceColor = selectedService !== 'Tous les services' 
@@ -198,13 +193,13 @@ export function ProfitabilityProjection() {
         data.push(dataPoint);
     }
     return data;
-  }, [entities, tariffs, selectedService, viewMode, isComparativeMode, costsByService]);
+  }, [entities, tariffs, selectedService, isComparativeMode, costsByService]);
 
   const breakEvenPoint = React.useMemo(() => {
     if (isComparativeMode) return null;
     const point = chartData.find(d => d.resultat >= 0);
     if (point) {
-      const serviceText = selectedService === 'Tous les services' ? 'pour l\'ensemble des services' : `pour le service ${selectedService}`;
+      const serviceText = `pour le service ${selectedService}`;
 
       return `Le seuil de rentabilité ${serviceText} est atteint avec ${point.adherentCount} adhérents.`;
     }
@@ -233,14 +228,6 @@ export function ProfitabilityProjection() {
               ))}
             </SelectContent>
           </Select>
-          {selectedService === 'Tous les services' && (
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'comparative' | 'cumulative')} className="w-full sm:w-auto">
-              <TabsList>
-                <TabsTrigger value="cumulative">Vue cumulée</TabsTrigger>
-                <TabsTrigger value="comparative">Vue comparative</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          )}
         </div>
         
         <ChartContainer config={chartConfig} className="h-[400px] w-full">
