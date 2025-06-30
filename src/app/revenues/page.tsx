@@ -120,7 +120,7 @@ export default function RevenuesPage() {
     
         const servicesToConsider = serviceTab === 'Cumulé' ? SERVICES : [serviceTab as Service];
         
-        let details: ModalDetail[] = [];
+        const details: ModalDetail[] = [];
     
         entities.forEach(entity => {
             if (entity.statut !== 'Actif') return;
