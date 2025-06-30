@@ -75,14 +75,20 @@ export default function RevenuesPage() {
                     let serviceBaseRevenue = 0;
                     let servicePotentialRevenue = 0;
                     
-                    entities.forEach(entity => {
-                        if (entity.statut !== 'Actif') return;
-                        const price = getTariffPriceForEntity(entity, service, tariffs);
+                    // Base revenue from active entities
+                    entities.filter(e => e.statut === 'Actif').forEach(entity => {
                         const subscription = entity.services.find(s => s.name === service);
-    
                         if (subscription && year >= subscription.year) {
+                            const price = getTariffPriceForEntity(entity, service, tariffs);
                             serviceBaseRevenue += price;
-                        } else if (!subscription) {
+                        }
+                    });
+
+                    // Potential revenue from inactive entities
+                    entities.filter(e => e.statut === 'Inactif').forEach(entity => {
+                        const subscription = entity.services.find(s => s.name === service);
+                        if (!subscription) {
+                            const price = getTariffPriceForEntity(entity, service, tariffs);
                             servicePotentialRevenue += price;
                         }
                     });

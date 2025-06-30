@@ -85,8 +85,7 @@ export function KpiCards() {
       serviceFilter: string,
       year: number
     ) => {
-      let baseRevenue = 0;
-      let adoptionRevenue = 0;
+      let revenue = 0;
       let cost = 0;
 
       // --- Revenue ---
@@ -101,30 +100,46 @@ export function KpiCards() {
           ? [serviceFilter as Service]
           : [];
 
+      let totalBaseRevenue = 0;
+      let totalAdoptionRevenue = 0;
+
       servicesForRevenue.forEach((service) => {
         let serviceBaseRevenue = 0;
         let servicePotentialRevenue = 0;
 
-        entities.forEach((entity) => {
-          if (entity.statut !== 'Actif') return;
-          const price = getTariffPriceForEntity(entity, service, tariffs);
-          const subscription = entity.services.find((s) => s.name === service);
-          
-          if (subscription && year >= subscription.year) {
-            serviceBaseRevenue += price;
-          } else if (!subscription) {
-            servicePotentialRevenue += price;
-          }
-        });
+        // Base revenue from active entities
+        entities
+          .filter((e) => e.statut === 'Actif')
+          .forEach((entity) => {
+            const subscription = entity.services.find((s) => s.name === service);
+            if (subscription && year >= subscription.year) {
+              const price = getTariffPriceForEntity(entity, service, tariffs);
+              serviceBaseRevenue += price;
+            }
+          });
 
+        // Potential revenue from inactive entities
+        entities
+          .filter((e) => e.statut === 'Inactif')
+          .forEach((entity) => {
+            const subscription = entity.services.find(
+              (s) => s.name === service
+            );
+            if (!subscription) {
+              const price = getTariffPriceForEntity(entity, service, tariffs);
+              servicePotentialRevenue += price;
+            }
+          });
+        
+        totalBaseRevenue += serviceBaseRevenue;
         const serviceKey = service as keyof AdoptionRates;
         const adoptionRatePercent = scenario.adoptionRates[serviceKey];
-        baseRevenue += serviceBaseRevenue;
-        adoptionRevenue += servicePotentialRevenue * (adoptionRatePercent / 100);
+        totalAdoptionRevenue += servicePotentialRevenue * (adoptionRatePercent / 100);
       });
-      
-      baseRevenue *= priceIncreaseFactor;
-      adoptionRevenue *= priceIncreaseFactor;
+
+      const finalBaseRevenue = totalBaseRevenue * priceIncreaseFactor;
+      const finalAdoptionRevenue = totalAdoptionRevenue * priceIncreaseFactor;
+      revenue = finalBaseRevenue + finalAdoptionRevenue;
 
       // --- Cost ---
       const indexationRate = scenario.indexationRate / 100;
@@ -135,28 +150,31 @@ export function KpiCards() {
         if (serviceFilter === 'Tous les services') return true;
         return c.service === serviceFilter;
       });
-      
-      const projectedCosts = costsForService.map(c => {
-          let displayedAnnualCost = c.annualCost;
 
-          if ((c.category === 'Fixe' || c.category === 'Variable')) {
-              displayedAnnualCost *= indexationFactor;
+      const projectedCosts = costsForService.map((c) => {
+        let displayedAnnualCost = c.annualCost;
+
+        if (c.category === 'Fixe' || c.category === 'Variable') {
+          displayedAnnualCost *= indexationFactor;
+        }
+
+        if (c.category === 'Amortissement') {
+          const start = c.amortizationStartYear ?? 0;
+          const duration = c.amortizationDuration ?? 0;
+          if (duration === 0 || year < start || year >= start + duration) {
+            displayedAnnualCost = 0;
           }
-          
-          if (c.category === 'Amortissement') {
-              const start = c.amortizationStartYear ?? 0;
-              const duration = c.amortizationDuration ?? 0;
-              if (duration === 0 || year < start || year >= start + duration) {
-                  displayedAnnualCost = 0;
-              }
-          }
-          
-          return { displayedAnnualCost };
+        }
+
+        return { displayedAnnualCost };
       });
-      
-      cost = projectedCosts.reduce((sum, c) => sum + (c.displayedAnnualCost || 0), 0);
 
-      return { revenue: baseRevenue + adoptionRevenue, baseRevenue, adoptionRevenue, cost };
+      cost = projectedCosts.reduce(
+        (sum, c) => sum + (c.displayedAnnualCost || 0),
+        0
+      );
+
+      return { revenue, baseRevenue: finalBaseRevenue, adoptionRevenue: finalAdoptionRevenue, cost };
     };
 
     const calculateSubscriptionRate = (
@@ -201,8 +219,8 @@ export function KpiCards() {
     // Revenue Change
     const revenueChange =
       initialValuesForStart.revenue > 0
-        ? ((currentValuesForRevenueYear.baseRevenue + currentValuesForRevenueYear.adoptionRevenue) / initialValuesForStart.revenue - 1) * 100
-        : (currentValuesForRevenueYear.baseRevenue + currentValuesForRevenueYear.adoptionRevenue) > 0
+        ? (currentValuesForRevenueYear.revenue / initialValuesForStart.revenue - 1) * 100
+        : currentValuesForRevenueYear.revenue > 0
         ? 100
         : 0;
 
@@ -315,7 +333,7 @@ export function KpiCards() {
         value: (
           <div className="flex items-baseline gap-2">
             <span>
-              €{(currentValuesForRevenueYear.baseRevenue + currentValuesForRevenueYear.adoptionRevenue).toLocaleString('fr-FR', {
+              €{(currentValuesForRevenueYear.revenue).toLocaleString('fr-FR', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0,
               })}

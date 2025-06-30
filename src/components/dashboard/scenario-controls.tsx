@@ -92,26 +92,32 @@ const RoiCard = () => {
             const servicesToCalculate = serviceFilter === 'Tous les services' ? SERVICES : (SERVICES.includes(serviceFilter as any) ? [serviceFilter as Service] : []);
 
             servicesToCalculate.forEach(service => {
-                let baseRevenue = 0;
-                let potentialRevenue = 0;
+                let serviceBaseRevenue = 0;
+                let servicePotentialRevenue = 0;
 
-                entities.forEach(entity => {
-                    if (entity.statut !== 'Actif') return;
-                    const price = getTariffPriceForEntity(entity, service, tariffs);
+                // Base revenue from active entities
+                entities.filter(e => e.statut === 'Actif').forEach(entity => {
                     const subscription = entity.services.find(s => s.name === service);
-                    
                     if (subscription && year >= subscription.year) {
-                        baseRevenue += price;
-                    } else if (!subscription) {
-                        potentialRevenue += price;
+                        const price = getTariffPriceForEntity(entity, service, tariffs);
+                        serviceBaseRevenue += price;
+                    }
+                });
+
+                // Potential revenue from inactive entities
+                entities.filter(e => e.statut === 'Inactif').forEach(entity => {
+                    const subscription = entity.services.find(s => s.name === service);
+                    if (!subscription) {
+                        const price = getTariffPriceForEntity(entity, service, tariffs);
+                        servicePotentialRevenue += price;
                     }
                 });
 
                 const serviceKey = service as keyof AdoptionRates;
                 const adoptionRatePercent = scenario.adoptionRates[serviceKey];
-                const additionalRevenue = potentialRevenue * (adoptionRatePercent / 100);
+                const additionalRevenue = servicePotentialRevenue * (adoptionRatePercent / 100);
 
-                revenue += baseRevenue + additionalRevenue;
+                revenue += serviceBaseRevenue + additionalRevenue;
             });
             
             revenue *= priceIncreaseFactor;

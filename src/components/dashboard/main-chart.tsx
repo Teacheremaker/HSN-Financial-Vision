@@ -153,23 +153,29 @@ export function MainChart() {
       // --- Revenue & Adherent Calculation ---
       const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
       const baseAdherentSet = new Set<string>();
-      let projectedAdherents = 0;
       
       if (isAllServicesView) {
+        let projectedAdherents = 0;
         SERVICES.forEach(service => {
             let serviceBaseRevenue = 0;
             let servicePotentialRevenue = 0;
             let potentialAdherentCount = 0;
             
-            entities.forEach(entity => {
-                if (entity.statut !== 'Actif') return;
-                const price = getTariffPriceForEntity(entity, service, tariffs);
+            // Base from active
+            entities.filter(e => e.statut === 'Actif').forEach(entity => {
                 const subscription = entity.services.find(s => s.name === service);
-                
                 if (subscription && year >= subscription.year) {
+                    const price = getTariffPriceForEntity(entity, service, tariffs);
                     serviceBaseRevenue += price;
                     baseAdherentSet.add(entity.id);
-                } else if (!subscription) {
+                }
+            });
+
+            // Potential from inactive
+            entities.filter(e => e.statut === 'Inactif').forEach(entity => {
+                const subscription = entity.services.find(s => s.name === service);
+                if (!subscription) {
+                    const price = getTariffPriceForEntity(entity, service, tariffs);
                     servicePotentialRevenue += price;
                     potentialAdherentCount++;
                 }
@@ -182,21 +188,28 @@ export function MainChart() {
             const totalServiceRevenue = serviceBaseRevenue + serviceAdoptionRevenue;
             dataPoint[service] = Math.round((totalServiceRevenue * priceIncreaseFactor) / 1000);
         });
+        dataPoint.projectedAdherents = Math.round(projectedAdherents);
       } else { // Single service view
         let baseRevenue = 0;
         let potentialRevenue = 0;
         let potentialAdherentCount = 0;
         const service = selectedService as Service;
 
-        entities.forEach(entity => {
-            if (entity.statut !== 'Actif') return;
-            const price = getTariffPriceForEntity(entity, service, tariffs);
+        // Base revenue from active entities
+        entities.filter(e => e.statut === 'Actif').forEach(entity => {
             const subscription = entity.services.find(s => s.name === service);
-
             if (subscription && year >= subscription.year) {
+                const price = getTariffPriceForEntity(entity, service, tariffs);
                 baseRevenue += price;
                 baseAdherentSet.add(entity.id);
-            } else if (!subscription) {
+            }
+        });
+
+        // Potential revenue from inactive entities
+        entities.filter(e => e.statut === 'Inactif').forEach(entity => {
+            const subscription = entity.services.find(s => s.name === service);
+            if(!subscription) {
+                const price = getTariffPriceForEntity(entity, service, tariffs);
                 potentialRevenue += price;
                 potentialAdherentCount++;
             }
@@ -204,15 +217,14 @@ export function MainChart() {
 
         const adoptionRate = scenario.adoptionRates[service] / 100;
         const adoptionRevenue = potentialRevenue * adoptionRate;
-        projectedAdherents = potentialAdherentCount * adoptionRate;
+        dataPoint.projectedAdherents = Math.round(potentialAdherentCount * adoptionRate);
 
         dataPoint.baseRevenue = Math.round((baseRevenue * priceIncreaseFactor) / 1000);
         dataPoint.adoptionRevenue = Math.round((adoptionRevenue * priceIncreaseFactor) / 1000);
       }
 
       dataPoint.baseAdherents = baseAdherentSet.size;
-      dataPoint.projectedAdherents = Math.round(projectedAdherents);
-
+      
       return dataPoint;
     }).sort((a,b) => a.year - b.year);
 
