@@ -99,33 +99,25 @@ export function MainChart() {
   const isAllServicesView = selectedService === 'Tous les services';
 
   const chartConfig = useMemo(() => {
-    if (isAllServicesView) {
-        return {
-          GEOTER: { label: "GEOTER", color: "hsl(var(--chart-1))" },
-          SPANC: { label: "SPANC", color: "hsl(var(--chart-2))" },
-          ROUTE: { label: "ROUTE", color: "hsl(var(--chart-3))" },
-          ADS: { label: "ADS", color: "hsl(var(--chart-5))" },
-          cost: { label: "Coûts opérationnels", color: "hsl(var(--chart-4))" },
-        };
-    }
-
     const serviceColorVar = serviceColorValues[selectedService as keyof typeof serviceColorValues] || serviceColorValues["Tous les services"];
-
+    
     return {
-        baseRevenue: {
-            label: "Revenu de base",
-            color: `hsl(${serviceColorVar} / 0.6)`,
-        },
-        adoptionRevenue: {
-            label: "Revenu d'adoption",
-            color: `hsl(${serviceColorVar})`,
-        },
-        cost: {
-            label: "Coûts opérationnels",
-            color: "hsl(var(--chart-4))",
-        },
+      GEOTER: { label: "GEOTER", color: `hsl(${serviceColorValues.GEOTER})` },
+      SPANC: { label: "SPANC", color: `hsl(${serviceColorValues.SPANC})` },
+      ROUTE: { label: "ROUTE", color: `hsl(${serviceColorValues.ROUTE})` },
+      ADS: { label: "ADS", color: `hsl(${serviceColorValues.ADS})` },
+      cost: { label: "Coûts opérationnels", color: "hsl(var(--chart-4))" },
+      baseRevenue: {
+        label: "Revenu de base",
+        color: `hsl(${serviceColorVar} / 0.6)`,
+      },
+      adoptionRevenue: {
+          label: "Revenu d'adoption",
+          color: `hsl(${serviceColorVar})`,
+      },
     };
-  }, [selectedService, isAllServicesView]);
+  }, [selectedService]);
+
 
   const chartData = useMemo(() => {
     const operationalCosts = costs.filter(c => c.category !== 'À amortir');
@@ -176,9 +168,9 @@ export function MainChart() {
                 if (subscription && year >= subscription.year) {
                     serviceBaseRevenue += price;
                     baseAdherentSet.add(entity.id);
-                } else {
+                } else if (!entity.services.some(s => s.name === service)) {
                     servicePotentialRevenue += price;
-                    if (!subscription) potentialAdherentCount++;
+                    potentialAdherentCount++;
                 }
             });
             const adoptionRate = scenario.adoptionRates[service as keyof AdoptionRates] / 100;
@@ -202,9 +194,9 @@ export function MainChart() {
             if (subscription && year >= subscription.year) {
                 baseRevenue += price;
                 baseAdherentSet.add(entity.id);
-            } else {
+            } else if (!entity.services.some(s => s.name === service)) {
                 potentialRevenue += price;
-                if (!subscription) potentialAdherentCount++;
+                potentialAdherentCount++;
             }
         });
 
@@ -266,22 +258,19 @@ export function MainChart() {
             />
             <ChartLegend content={<ChartLegendContent />} />
             
-            {isAllServicesView ? (
-              SERVICES.map((service) => (
-                <Bar 
-                    key={service} 
-                    dataKey={service} 
-                    fill={`var(--color-${service})`} 
-                    stackId="revenue" 
-                    name={service}
-                />
-              ))
-            ) : (
-                <>
-                    <Bar dataKey="baseRevenue" fill="var(--color-baseRevenue)" stackId="revenue" name="Revenu de base" />
-                    <Bar dataKey="adoptionRevenue" fill="var(--color-adoptionRevenue)" radius={[4, 4, 0, 0]} stackId="revenue" name="Revenu d'adoption" />
-                </>
-            )}
+            {SERVICES.map((service) => (
+              <Bar 
+                  key={service} 
+                  dataKey={service} 
+                  fill={`var(--color-${service})`} 
+                  stackId="revenue" 
+                  name={service}
+                  hide={!isAllServicesView}
+              />
+            ))}
+            
+            <Bar dataKey="baseRevenue" fill="var(--color-baseRevenue)" stackId="revenue" name="Revenu de base" hide={isAllServicesView} />
+            <Bar dataKey="adoptionRevenue" fill="var(--color-adoptionRevenue)" radius={[4, 4, 0, 0]} stackId="revenue" name="Revenu d'adoption" hide={isAllServicesView} />
 
             <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} name="Coûts opérationnels" />
           </ComposedChart>
