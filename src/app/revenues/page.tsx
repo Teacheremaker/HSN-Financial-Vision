@@ -2,7 +2,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Header } from "@/components/layout/header";
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -26,13 +29,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsContent } from "@/components/ui/tabs";
 import { useScenarioStore, SERVICES, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
 import { useEntityStore } from "@/hooks/use-entity-store";
 import { useTariffStore } from "@/hooks/use-tariff-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
 
-const years = Array.from({ length: 2033 - 2025 + 1 }, (_, i) => 2025 + i);
 const TABS = ['Cumulé', ...SERVICES];
 
 type RevenueData = {
@@ -50,13 +52,18 @@ type ModalDetail = {
 };
 
 export default function RevenuesPage() {
-    const { scenario, startYear } = useScenarioStore();
+    const { scenario, startYear, endYear } = useScenarioStore();
     const { entities } = useEntityStore();
     const { tariffs } = useTariffStore();
     const [activeTab, setActiveTab] = useState('Cumulé');
 
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [modalData, setModalData] = useState<{ year: number; service: string; details: ModalDetail[] } | null>(null);
+
+    const years = useMemo(() => {
+        if (startYear > endYear) return [];
+        return Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
+    }, [startYear, endYear]);
 
 
     const revenueDataByService = useMemo(() => {
@@ -117,7 +124,7 @@ export default function RevenuesPage() {
 
         return data;
 
-    }, [scenario, entities, tariffs, startYear]);
+    }, [scenario, entities, tariffs, startYear, years]);
 
     const handleYearClick = (year: number, serviceTab: string) => {
         const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
@@ -160,9 +167,60 @@ export default function RevenuesPage() {
         return value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
+    const handleExport = () => {
+        const dataForExport: any[] = [];
+    
+        entities.filter(e => e.statut === 'Actif').forEach(entity => {
+            entity.services.forEach(subscription => {
+                const basePrice = getTariffPriceForEntity(entity, subscription.name as Service, tariffs);
+    
+                const rowData: { [key: string]: string | number } = {
+                    'Entité': entity.nom,
+                    'Type': entity.type,
+                    'Service': subscription.name,
+                    'Année de souscription': subscription.year,
+                    'Tarif de base Annuel (€)': basePrice,
+                };
+    
+                years.forEach(year => {
+                    let projectedRevenue = 0;
+                    if (year >= subscription.year) {
+                        const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
+                        projectedRevenue = basePrice * priceIncreaseFactor;
+                    }
+                    rowData[`Recette projetée ${year} (€)`] = parseFloat(projectedRevenue.toFixed(2));
+                });
+                dataForExport.push(rowData);
+            });
+        });
+    
+        if (dataForExport.length === 0) {
+            return;
+        }
+    
+        const worksheet = XLSX.utils.json_to_sheet(dataForExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Détail Recettes Adhérents');
+    
+        const cols = Object.keys(dataForExport[0] || {}).map(key => ({
+             wch: key.includes('Entité') ? 40 : (key.length < 20 ? 20 : key.length + 5) 
+        }));
+        worksheet['!cols'] = cols;
+    
+        XLSX.writeFile(workbook, 'projection_recettes_adherents.xlsx');
+    };
+
     return (
         <div className="flex flex-col h-full">
-            <Header title="Détail des recettes" />
+            <Header 
+                title="Détail des recettes"
+                actions={
+                    <Button variant="outline" onClick={handleExport}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Exporter les détails
+                    </Button>
+                }
+            />
             <main className="flex-1 space-y-4 p-4 md:p-8 pt-0">
                 <Card>
                     <CardHeader>
