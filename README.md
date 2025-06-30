@@ -24,6 +24,7 @@ Technologies Utilisées
 •Gestion d'état : Zustand (via des hooks personnalisés)
 
 •Graphiques : Recharts
+•Hébergement : Netlify
 
 Installation et Démarrage Local
 
@@ -34,30 +35,36 @@ Prérequis
 Assurez-vous d'avoir les éléments suivants installés :
 
 •Node.js (version 18 ou supérieure)
-
 •npm ou Yarn (npm est recommandé)
-
-•Firebase CLI (pour l'émulation locale de Firebase)
 
 Étapes d'Installation
 
 1.Cloner le dépôt :
 
 2.Installer les dépendances :
+```bash
+npm install
+```
 
 3.
-Configurer Firebase :
-HSN-Financial-Vision utilise Firebase pour la persistance des données. Vous devrez configurer un projet Firebase et initialiser les émulateurs locaux.
-
-•
-Authentification Firebase CLI :
-
-•Initialiser les émulateurs :
-
-
+Configurer les variables d'environnement :
+Créez un fichier `.env.local` à la racine du projet et ajoutez vos clés d'API, notamment pour les services Google AI (Genkit).
+```
+GOOGLE_API_KEY=VOTRE_CLE_API_ICI
+```
 
 4.Lancer l'application Next.js :
-Dans un nouveau terminal, lancez l'application de développement Next.js :
+```bash
+npm run dev
+```
+
+Déploiement sur Netlify
+
+Ce projet est configuré pour un déploiement automatique sur Netlify.
+1. Poussez votre code sur un dépôt Git (GitHub, GitLab, etc.).
+2. Créez un nouveau site sur Netlify et connectez-le à votre dépôt.
+3. Netlify détectera automatiquement le fichier `netlify.toml` et construira le projet.
+4. **Important :** N'oubliez pas d'ajouter vos variables d'environnement (comme `GOOGLE_API_KEY`) dans les paramètres de votre site sur Netlify (`Site settings > Build & deploy > Environment`).
 
 Structure du Projet
 
