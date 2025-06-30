@@ -27,7 +27,7 @@ const serviceColorHsl: Record<Service, string> = {
   GEOTER: "217.2 91.2% 59.8%", // chart-1
   SPANC: "158.1 81.3% 40.2%",  // chart-2
   ROUTE: "48 96% 50%",        // chart-3
-  ADS: "0 0% 50%",           // chart-5
+  ADS: "260 80% 60%",           // chart-5 is now violet
 };
 
 const ParameterSlider = ({
