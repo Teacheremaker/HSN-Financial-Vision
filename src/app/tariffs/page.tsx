@@ -78,6 +78,20 @@ export default function TariffsPage() {
         return <span className="text-muted-foreground">-</span>;
     }
 
+    const getCategoryClass = (category: string): string => {
+        const lowerCategory = category.toLowerCase();
+        if (lowerCategory.includes('commune') && !lowerCategory.includes('communauté')) {
+            return 'bg-blue-50 dark:bg-blue-950/60';
+        }
+        if (lowerCategory.includes('syndicat')) {
+            return 'bg-green-50 dark:bg-green-950/60';
+        }
+        if (lowerCategory.includes('communauté')) {
+            return 'bg-yellow-50 dark:bg-yellow-950/60';
+        }
+        return '';
+    };
+
   return (
     <div className="flex flex-col h-full">
         <Header 
@@ -130,7 +144,7 @@ export default function TariffsPage() {
                                 {filteredTariffs.length > 0 ? filteredTariffs.map((tariff) => {
                                     const isEditing = editingRowId === tariff.id;
                                     return (
-                                    <TableRow key={tariff.id}>
+                                    <TableRow key={tariff.id} className={getCategoryClass(tariff.category)}>
                                         <TableCell className="font-medium">
                                             {isEditing ? <Input value={tariff.category} onChange={(e) => handleUpdate(tariff.id, 'category', e.target.value)} className="h-8" /> : tariff.category}
                                         </TableCell>
