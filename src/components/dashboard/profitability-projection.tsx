@@ -141,58 +141,59 @@ export function ProfitabilityProjection() {
   }, [costs]);
 
   const chartData = React.useMemo(() => {
-    const listToIterate = (selectedService === 'Tous les services')
-        ? [...entities]
-            .filter(e => e.services.length > 0)
-            .sort((a, b) => Math.min(...a.services.map(s => s.year)) - Math.min(...b.services.map(s => s.year)))
-        : [...entities]
-            .filter(e => e.services.some(s => s.name === selectedService))
-            .sort((a, b) => {
-                const yearA = a.services.find(s => s.name === selectedService)!.year;
-                const yearB = b.services.find(s => s.name === selectedService)!.year;
-                return yearA - yearB;
-            });
-    
-    const data = [];
-    const serviceRevenueAcc: { [key: string]: number } = {};
-    allServices.forEach(s => serviceRevenueAcc[s] = 0);
-    let cumulativeRevenue = 0;
-    
-    for (let i = 0; i < listToIterate.length; i++) {
-        const entity = listToIterate[i];
-        
-        let dataPoint: any = {
-            adherentCount: i + 1,
-        };
+    if (isComparativeMode) {
+      // Logic for comparative view
+      const listToIterate = [...entities]
+          .filter(e => e.services.length > 0)
+          .sort((a, b) => Math.min(...a.services.map(s => s.year)) - Math.min(...b.services.map(s => s.year)));
+      
+      const data = [];
+      const serviceRevenueAcc: { [key: string]: number } = {};
+      allServices.forEach(s => serviceRevenueAcc[s] = 0);
+      
+      for (let i = 0; i < listToIterate.length; i++) {
+          const entity = listToIterate[i];
+          
+          entity.services.forEach(serviceSubscription => {
+              const price = getTariffPriceForEntity(entity, serviceSubscription.name, tariffs);
+              serviceRevenueAcc[serviceSubscription.name] = (serviceRevenueAcc[serviceSubscription.name] || 0) + price;
+          });
 
-        if (isComparativeMode) {
-            entity.services.forEach(serviceSubscription => {
-                const price = getTariffPriceForEntity(entity, serviceSubscription.name, tariffs);
-                serviceRevenueAcc[serviceSubscription.name] = (serviceRevenueAcc[serviceSubscription.name] || 0) + price;
-            });
-            SERVICES.forEach(s => {
-                dataPoint[`recettes_${s.id}`] = serviceRevenueAcc[s.name] || 0;
-                dataPoint[`cout_${s.id}`] = costsByService[s.name] || 0;
-            });
-        } else {
-            const costForSelectedView = costsByService[selectedService] ?? 0;
-            let revenueForThisAdherent = 0;
-            if (selectedService === 'Tous les services') {
-                entity.services.forEach(sub => {
-                    revenueForThisAdherent += getTariffPriceForEntity(entity, sub.name, tariffs);
-                });
-            } else {
-                revenueForThisAdherent = getTariffPriceForEntity(entity, selectedService, tariffs);
-            }
-            cumulativeRevenue += revenueForThisAdherent;
-            
-            dataPoint.recettes = cumulativeRevenue;
-            dataPoint.cout = costForSelectedView;
-            dataPoint.resultat = cumulativeRevenue - costForSelectedView;
-        }
-        data.push(dataPoint);
+          const dataPoint: any = { adherentCount: i + 1 };
+          SERVICES.forEach(s => {
+              dataPoint[`recettes_${s.id}`] = serviceRevenueAcc[s.name] || 0;
+              dataPoint[`cout_${s.id}`] = costsByService[s.name] || 0;
+          });
+          data.push(dataPoint);
+      }
+      return data;
+    } else {
+      // Logic for individual service view
+      const entitiesForService = entities
+          .filter(e => e.services.some(s => s.name === selectedService))
+          .sort((a, b) => {
+              const yearA = a.services.find(s => s.name === selectedService)!.year;
+              const yearB = b.services.find(s => s.name === selectedService)!.year;
+              return yearA - yearB;
+          });
+      
+      if (entitiesForService.length === 0) return [];
+
+      let cumulativeRevenue = 0;
+      const costForSelectedView = costsByService[selectedService] ?? 0;
+
+      return entitiesForService.map((entity, index) => {
+          const revenueForThisAdherent = getTariffPriceForEntity(entity, selectedService, tariffs);
+          cumulativeRevenue += revenueForThisAdherent;
+          
+          return {
+              adherentCount: index + 1,
+              recettes: cumulativeRevenue,
+              cout: costForSelectedView,
+              resultat: cumulativeRevenue - costForSelectedView
+          };
+      });
     }
-    return data;
   }, [entities, tariffs, selectedService, isComparativeMode, costsByService]);
 
   const breakEvenPoint = React.useMemo(() => {
@@ -200,7 +201,6 @@ export function ProfitabilityProjection() {
     const point = chartData.find(d => d.resultat >= 0);
     if (point) {
       const serviceText = `pour le service ${selectedService}`;
-
       return `Le seuil de rentabilité ${serviceText} est atteint avec ${point.adherentCount} adhérents.`;
     }
     const adherentCount = chartData.length;
