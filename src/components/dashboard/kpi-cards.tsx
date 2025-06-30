@@ -238,13 +238,13 @@ export function KpiCards() {
       selectedService === 'Tous les services' ? '' : ` ${selectedService}`;
     const adoptionTitle =
       selectedService === 'Tous les services'
-        ? "Taux d'Adoption (Global)"
-        : `Taux d'Adoption ${selectedService}`;
+        ? "Taux d'adoption (Global)"
+        : `Taux d'adoption ${selectedService}`;
 
     const revenueKpiName = (
       <div className="flex w-full items-center justify-between">
         <span>
-          Revenu Total{serviceName} ({revenueYear})
+          Revenu total{serviceName} ({revenueYear})
         </span>
         <div className="-mr-2 flex items-center">
           <Button
@@ -278,7 +278,7 @@ export function KpiCards() {
     const costKpiName = (
       <div className="flex w-full items-center justify-between">
         <span>
-          Coût Opérationnel{serviceName} ({costYear})
+          Coût opérationnel{serviceName} ({costYear})
         </span>
         <div className="-mr-2 flex items-center">
           <Button

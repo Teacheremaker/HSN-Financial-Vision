@@ -182,7 +182,7 @@ export function ProfitabilityProjection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Projection de Rentabilité Interactive</CardTitle>
+        <CardTitle>Projection de rentabilité interactive</CardTitle>
         <CardDescription>
           Visualisez la rentabilité en fonction du nombre d'adhérents et de la population.
         </CardDescription>

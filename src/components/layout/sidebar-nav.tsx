@@ -16,7 +16,7 @@ const links = [
   { href: "/entities", label: "Entités", icon: Users },
   { href: "/revenues", label: "Recettes", icon: DollarSign },
   { href: "/tariffs", label: "Tarifs", icon: Sheet },
-  { href: "/costs", label: "Coûts Opérationnels", icon: Coins },
+  { href: "/costs", label: "Coûts opérationnels", icon: Coins },
 ];
 
 export function SidebarNav() {

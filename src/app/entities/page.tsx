@@ -449,7 +449,7 @@ export default function EntitiesPage() {
     },
     {
       accessorKey: 'services',
-      header: 'Services Actifs',
+      header: 'Services actifs',
       cell: EditableCell,
       enableSorting: false,
       filterFn: (row, columnId, filterValue: { services: string[]; year: number | null }) => {
@@ -568,7 +568,7 @@ export default function EntitiesPage() {
             style={{ display: 'none' }}
         />
       <Header
-        title="Gestion des Entités"
+        title="Gestion des entités"
         actions={
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm" onClick={handleExport}>
@@ -577,7 +577,7 @@ export default function EntitiesPage() {
             </Button>
             <Button variant="outline" size="sm" onClick={handleExportTemplate}>
               <FileText className="mr-2 h-4 w-4" />
-              Exporter Trame
+              Exporter trame
             </Button>
             <Button variant="outline" size="sm" onClick={handleImportClick}>
               <Upload className="mr-2 h-4 w-4" />
@@ -585,7 +585,7 @@ export default function EntitiesPage() {
             </Button>
             <Button size="sm" onClick={handleAddRow}>
               <PlusCircle className="mr-2 h-4 w-4" />
-              Ajouter une Entité
+              Ajouter une entité
             </Button>
           </div>
         }

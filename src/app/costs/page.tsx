@@ -206,12 +206,12 @@ export default function CostsPage() {
   return (
     <div className="flex flex-col h-full">
         <Header 
-            title="Coûts Opérationnels"
+            title="Coûts opérationnels"
             actions={
                 <div className="flex items-center space-x-2">
                      <Button variant="outline" onClick={handleAddNew}>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Ajouter un Coût
+                        Ajouter un coût
                     </Button>
                     <Button variant="outline" onClick={handleExport}>
                         <Download className="mr-2 h-4 w-4" />
@@ -267,7 +267,7 @@ export default function CostsPage() {
                         <TabsList>
                             {services.map((service) => (
                                 <TabsTrigger key={service} value={service}>
-                                    {service === 'Global' ? 'Coûts Mutualisés' : service}
+                                    {service === 'Global' ? 'Coûts mutualisés' : service}
                                 </TabsTrigger>
                             ))}
                         </TabsList>
@@ -276,9 +276,9 @@ export default function CostsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[30%]">Élément de Coût</TableHead>
+                                    <TableHead className="w-[30%]">Élément de coût</TableHead>
                                     <TableHead>Catégorie</TableHead>
-                                    <TableHead>Coût Annuel ({selectedYear})</TableHead>
+                                    <TableHead>Coût annuel ({selectedYear})</TableHead>
                                     <TableHead>Amortissement</TableHead>
                                     <TableHead>Notes</TableHead>
                                     <TableHead><span className="sr-only">Actions</span></TableHead>
@@ -419,7 +419,7 @@ export default function CostsPage() {
                             </TableBody>
                             <TableFooter>
                                 <TableRow className="bg-muted/50 font-medium">
-                                    <TableCell colSpan={2}>Total Charges d'Exploitation {activeTab !== 'Global' ? activeTab : 'Mutualisées'}</TableCell>
+                                    <TableCell colSpan={2}>Total charges d'exploitation {activeTab !== 'Global' ? activeTab : 'mutualisées'}</TableCell>
                                     <TableCell className="text-right">{totalAnnualCost.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                     <TableCell colSpan={3}></TableCell>
                                 </TableRow>

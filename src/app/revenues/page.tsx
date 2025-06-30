@@ -158,11 +158,11 @@ export default function RevenuesPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <Header title="Détail des Recettes" />
+            <Header title="Détail des recettes" />
             <main className="flex-1 space-y-4 p-4 md:p-8 pt-0">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Recettes par Année et par Service</CardTitle>
+                        <CardTitle>Recettes par année et par service</CardTitle>
                         <CardDescription>
                             Projections des recettes basées sur les entités et le scénario actuel. Cliquez sur une ligne pour voir le détail des adhérents.
                         </CardDescription>
@@ -245,7 +245,7 @@ export default function RevenuesPage() {
                                     <TableHead>Entité</TableHead>
                                     <TableHead>Type</TableHead>
                                     {modalData?.service === 'Cumulé' && <TableHead>Service</TableHead>}
-                                    <TableHead className="text-right">Contribution Annuelle (€)</TableHead>
+                                    <TableHead className="text-right">Contribution annuelle (€)</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

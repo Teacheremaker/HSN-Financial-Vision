@@ -42,7 +42,7 @@ const chartConfig = {
     color: "hsl(var(--chart-2))",
   },
   cost: {
-    label: "Coûts Opérationnels",
+    label: "Coûts opérationnels",
     color: "hsl(var(--chart-5))",
   },
 };
@@ -186,7 +186,7 @@ export function MainChart() {
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
-          <CardTitle>Projections Globales</CardTitle>
+          <CardTitle>Projections globales</CardTitle>
           <CardDescription>Prévisions de revenus et coûts {startYear} - {endYear} (en milliers d'€)</CardDescription>
         </div>
         <div className="w-full max-w-[200px]">
@@ -227,7 +227,7 @@ export function MainChart() {
             <Bar dataKey="baseRevenue" fill="var(--color-baseRevenue)" stackId="revenue" name="Revenu de base" />
             <Bar dataKey="adoptionRevenue" fill="var(--color-adoptionRevenue)" radius={[4, 4, 0, 0]} stackId="revenue" name="Revenu d'adoption" />
 
-            <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} name="Coûts Opérationnels" />
+            <Line type="monotone" dataKey="cost" stroke="var(--color-cost)" strokeWidth={2} dot={{ r: 4 }} name="Coûts opérationnels" />
           </ComposedChart>
         </ChartContainer>
       </CardContent>

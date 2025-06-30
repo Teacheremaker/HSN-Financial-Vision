@@ -173,7 +173,7 @@ const RoiCard = () => {
                  <CardTitle className="text-sm font-medium w-full">
                     <div className="flex w-full items-center justify-between">
                         <span>
-                          ROI Projeté{roiData.serviceName} ({roiYear})
+                          ROI projeté{roiData.serviceName} ({roiYear})
                         </span>
                         <div className="-mr-2 flex items-center">
                           <Button
@@ -222,14 +222,14 @@ export function ScenarioControls() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Constructeur de Scénarios</CardTitle>
+        <CardTitle>Constructeur de scénarios</CardTitle>
         <CardDescription>
           Ajustez les paramètres pour modéliser différents avenirs financiers.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Période de Projection</Label>
+          <Label className="text-sm font-medium">Période de projection</Label>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1">
               <Label htmlFor="start-year" className="text-xs text-muted-foreground">Début</Label>
@@ -264,7 +264,7 @@ export function ScenarioControls() {
         <Separator />
         <div className="space-y-4 pt-4">
             <div>
-                <Label className="text-sm font-medium">Taux d'Adoption par Service (en plus des entités déjà inscrites)</Label>
+                <Label className="text-sm font-medium">Taux d'adoption par service (en plus des entités déjà inscrites)</Label>
                 <div className="space-y-4 pt-2">
                     {SERVICES.map((service) => (
                         <ParameterSlider
@@ -278,15 +278,15 @@ export function ScenarioControls() {
             </div>
             <Separator />
             <div>
-                <Label className="text-sm font-medium">Paramètres Généraux</Label>
+                <Label className="text-sm font-medium">Paramètres généraux</Label>
                 <div className="space-y-4 pt-2">
                     <ParameterSlider
-                        label="Augmentation des Tarifs"
+                        label="Augmentation des tarifs"
                         value={scenario.priceIncrease}
                         onValueChange={(value) => updateScenarioValue('priceIncrease', value)}
                     />
                     <ParameterSlider
-                        label="Taux d'Indexation"
+                        label="Taux d'indexation"
                         value={scenario.indexationRate}
                         onValueChange={(value) => updateScenarioValue('indexationRate', value)}
                     />
@@ -302,7 +302,7 @@ export function ScenarioControls() {
         </div>
         <Separator />
          <div className="space-y-2">
-            <h3 className="text-sm font-medium">Analyse de Sensibilité</h3>
+            <h3 className="text-sm font-medium">Analyse de sensibilité</h3>
              <div className="pt-2">
                 <RoiCard />
              </div>

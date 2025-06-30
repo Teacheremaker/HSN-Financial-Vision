@@ -61,13 +61,13 @@ export function AiOptimizer() {
     if (response.success && response.data) {
       setResult(response.data);
       toast({
-        title: "Optimisation Terminée",
+        title: "Optimisation terminée",
         description: "L'IA a fourni des suggestions.",
       });
     } else {
       toast({
         variant: "destructive",
-        title: "Échec de l'Optimisation",
+        title: "Échec de l'optimisation",
         description: response.error,
       });
     }
@@ -92,7 +92,7 @@ export function AiOptimizer() {
               name="kpi"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>KPI à Optimiser</FormLabel>
+                  <FormLabel>KPI à optimiser</FormLabel>
                   <FormControl>
                     <Input placeholder="ex: Revenu Total" {...field} />
                   </FormControl>
@@ -105,7 +105,7 @@ export function AiOptimizer() {
               name="levers"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Leviers à Ajuster</FormLabel>
+                  <FormLabel>Leviers à ajuster</FormLabel>
                   <FormControl>
                     <Input placeholder="ex: Tarification, dépenses marketing" {...field} />
                   </FormControl>
@@ -118,7 +118,7 @@ export function AiOptimizer() {
               name="constraints"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contraintes (Optionnel)</FormLabel>
+                  <FormLabel>Contraintes (optionnel)</FormLabel>
                   <FormControl>
                     <Textarea placeholder="ex: Le budget ne peut pas dépasser 50k €" {...field} />
                   </FormControl>
@@ -133,7 +133,7 @@ export function AiOptimizer() {
                 </CardHeader>
                 <CardContent className="text-sm space-y-4">
                   <div>
-                    <h4 className="font-semibold">Paramètres Suggérés :</h4>
+                    <h4 className="font-semibold">Paramètres suggérés :</h4>
                     <p className="text-muted-foreground">{result.suggestedParameters}</p>
                   </div>
                   <div>
@@ -154,7 +154,7 @@ export function AiOptimizer() {
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Lancer l'Optimisation
+                  Lancer l'optimisation
                 </>
               )}
             </Button>

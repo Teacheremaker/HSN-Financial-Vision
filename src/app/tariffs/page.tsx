@@ -95,7 +95,7 @@ export default function TariffsPage() {
   return (
     <div className="flex flex-col h-full">
         <Header 
-            title="Grille Tarifaire Détaillée"
+            title="Grille tarifaire détaillée"
             actions={
                 <div className="flex items-center space-x-2">
                     <Button variant="outline" onClick={handleAddNew}>
@@ -112,7 +112,7 @@ export default function TariffsPage() {
         <main className="flex-1 space-y-4 p-4 md:p-8 pt-0">
             <Card>
                 <CardHeader>
-                    <CardTitle>Tarifs des Services</CardTitle>
+                    <CardTitle>Tarifs des services</CardTitle>
                     <CardDescription>
                         Naviguez entre les services pour voir et modifier les grilles tarifaires. Les prix sont en euros HT.
                     </CardDescription>
@@ -133,9 +133,9 @@ export default function TariffsPage() {
                                 <TableRow>
                                     <TableHead className="w-[30%]">Strate/Catégorie</TableHead>
                                     <TableHead>Population</TableHead>
-                                    <TableHead className="text-right">Prix Fondateur (€)</TableHead>
-                                    <TableHead className="text-right">Prix Utilisateur (€)</TableHead>
-                                    <TableHead className="text-right">Remise Fond. (%)</TableHead>
+                                    <TableHead className="text-right">Prix fondateur (€)</TableHead>
+                                    <TableHead className="text-right">Prix utilisateur (€)</TableHead>
+                                    <TableHead className="text-right">Remise fond. (%)</TableHead>
                                     <TableHead>Notes</TableHead>
                                     <TableHead><span className="sr-only">Actions</span></TableHead>
                                 </TableRow>
