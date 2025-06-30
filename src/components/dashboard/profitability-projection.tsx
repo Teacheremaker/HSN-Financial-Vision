@@ -91,7 +91,10 @@ export function ProfitabilityProjection() {
 
                 const adoptionRate = scenario.adoptionRates[service as keyof AdoptionRates] / 100;
                 const adoptionRevenue = potentialRevenue * adoptionRate;
-                const totalRevenue = (baseRevenue + adoptionRevenue) * priceIncreaseFactor;
+                
+                const finalBaseRevenue = baseRevenue * priceIncreaseFactor;
+                const finalAdoptionRevenue = adoptionRevenue * priceIncreaseFactor;
+                const totalRevenue = finalBaseRevenue + finalAdoptionRevenue;
 
                 // --- COST ---
                 let serviceSpecificCost = 0;
@@ -108,8 +111,9 @@ export function ProfitabilityProjection() {
                     }
                     serviceSpecificCost += annualCost;
                 });
-
-                const totalCost = serviceSpecificCost + (globalCostPerService * indexationFactor);
+                
+                const allocatedGlobalCost = globalCostPerService * indexationFactor;
+                const totalCost = serviceSpecificCost + allocatedGlobalCost;
 
                 return {
                     year,
@@ -117,6 +121,11 @@ export function ProfitabilityProjection() {
                     recettes: totalRevenue,
                     couts: totalCost,
                     resultat: totalRevenue - totalCost,
+                    // Detailed data for export
+                    recettesBase: finalBaseRevenue,
+                    recettesAdoption: finalAdoptionRevenue,
+                    coutsSpecifiques: serviceSpecificCost,
+                    coutsMutualises: allocatedGlobalCost,
                 };
             });
         });
@@ -138,16 +147,34 @@ export function ProfitabilityProjection() {
 
     const handleExport = () => {
         const dataForExport = profitabilityData.map(d => ({
-            Année: d.year,
-            Service: d.service,
-            Recettes: d.recettes,
-            Coûts: d.couts,
-            Résultat: d.resultat,
+            'Année': d.year,
+            'Service': d.service,
+            'Recettes de base (€)': d.recettesBase,
+            'Recettes d\'adoption (€)': d.recettesAdoption,
+            'Recettes totales (€)': d.recettes,
+            'Coûts spécifiques (€)': d.coutsSpecifiques,
+            'Coûts mutualisés alloués (€)': d.coutsMutualises,
+            'Coûts totaux (€)': d.couts,
+            'Résultat (€)': d.resultat,
         }));
+        
         const worksheet = XLSX.utils.json_to_sheet(dataForExport);
+        
+        worksheet['!cols'] = [
+            { wch: 8 },  // Année
+            { wch: 15 }, // Service
+            { wch: 20 }, // Recettes de base (€)
+            { wch: 22 }, // Recettes d'adoption (€)
+            { wch: 20 }, // Recettes totales (€)
+            { wch: 20 }, // Coûts spécifiques (€)
+            { wch: 28 }, // Coûts mutualisés alloués (€)
+            { wch: 20 }, // Coûts totaux (€)
+            { wch: 20 }, // Résultat (€)
+        ];
+
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Rentabilité');
-        XLSX.writeFile(workbook, `analyse_rentabilite_${startYear}-${endYear}.xlsx`);
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Rentabilité détaillée');
+        XLSX.writeFile(workbook, `analyse_rentabilite_detaillee_${startYear}-${endYear}.xlsx`);
     };
 
     return (
@@ -161,7 +188,7 @@ export function ProfitabilityProjection() {
                 </div>
                 <Button variant="outline" size="sm" onClick={handleExport}>
                     <Download className="mr-2 h-4 w-4" />
-                    Exporter (CSV)
+                    Exporter (XLSX)
                 </Button>
             </CardHeader>
             <CardContent>
