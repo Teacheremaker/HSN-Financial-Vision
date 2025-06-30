@@ -1,7 +1,8 @@
+
 'use client';
 
 import * as React from 'react';
-import { BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ReferenceLine } from 'recharts';
+import { BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ReferenceLine, Cell } from 'recharts';
 import * as XLSX from 'xlsx';
 import { Download } from 'lucide-react';
 
@@ -191,9 +192,17 @@ export function ProfitabilityProjection() {
                                 <Tooltip content={<CustomTooltip />} />
                                 <Legend />
                                 <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
-                                <Bar dataKey="recettes" name="Recettes" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="recettes" name="Recettes" radius={[4, 4, 0, 0]}>
+                                    {synthesisChartData.map((entry, index) => (
+                                        <Cell key={`cell-recettes-${index}`} fill={serviceColorMap[entry.service as Service]} fillOpacity={0.6} />
+                                    ))}
+                                </Bar>
                                 <Bar dataKey="couts" name="Coûts" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="resultat" name="Résultat" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="resultat" name="Résultat" radius={[4, 4, 0, 0]}>
+                                     {synthesisChartData.map((entry, index) => (
+                                        <Cell key={`cell-resultat-${index}`} fill={serviceColorMap[entry.service as Service]} />
+                                    ))}
+                                </Bar>
                             </BarChart>
                         </ChartContainer>
                     </TabsContent>
