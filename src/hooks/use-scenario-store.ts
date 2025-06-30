@@ -36,7 +36,7 @@ type Actions = {
 const initialScenario: Scenario = {
   adoptionRates: { GEOTER: 0, SPANC: 0, ROUTE: 0, ADS: 0 },
   priceIncrease: 0,
-  indexationRate: 0,
+  indexationRate: 1,
 };
 
 
