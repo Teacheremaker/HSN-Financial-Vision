@@ -44,25 +44,21 @@ import { SERVICES as allServices } from '@/hooks/use-scenario-store';
 
 const SERVICES = allServices.map(s => ({id: s.toLowerCase(), name: s}));
 
-const chartConfig = {
-  population: { label: 'Population', color: 'hsl(var(--chart-4))' },
-  recettes: { label: 'Recettes', color: 'hsl(var(--chart-1))' },
-  resultat: { label: "Résultat d'exploitation", color: 'hsl(var(--chart-2))' },
-  geoter: { label: 'Recettes GEOTER', color: 'hsl(var(--chart-1))' },
-  spanc: { label: 'Recettes SPANC', color: 'hsl(var(--chart-2))' },
-  route: { label: 'Recettes ROUTE', color: 'hsl(var(--chart-3))' },
-  ads: { label: 'Recettes ADS', color: 'hsl(var(--chart-5))' },
-  cout_geoter: { label: 'Coût GEOTER', color: 'hsl(var(--chart-1))' },
-  cout_spanc: { label: 'Coût SPANC', color: 'hsl(var(--chart-2))' },
-  cout_route: { label: 'Coût ROUTE', color: 'hsl(var(--chart-3))' },
-  cout_ads: { label: 'Coût ADS', color: 'hsl(var(--chart-5))' },
+const serviceColorMap = {
+    GEOTER: 'hsl(var(--chart-1))',
+    SPANC: 'hsl(var(--chart-2))',
+    ROUTE: 'hsl(var(--chart-3))',
+    ADS: 'hsl(var(--chart-5))',
 };
+
 
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const population = payload.find(p => p.dataKey === 'population');
       const resultat = payload.find(p => p.dataKey === 'resultat');
+      const recettes = payload.find(p => p.dataKey === 'recettes');
+      const cout = payload.find(p => p.dataKey === 'cout');
   
       return (
         <div className="p-2 text-sm bg-background border rounded-lg shadow-lg">
@@ -79,12 +75,17 @@ const CustomTooltip = ({ active, payload, label }: any) => {
               </p>
             )
           ))}
-          {payload.find(p => p.dataKey === 'recettes') && (
-             <p style={{ color: payload.find(p => p.dataKey === 'recettes').color }}>
-                Recettes : {data.recettes.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+          {recettes && (
+             <p style={{ color: recettes.color }}>
+                Recettes : {recettes.value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
             </p>
           )}
-          {resultat && resultat.value >= 0 && (
+          {cout && (
+            <p style={{ color: cout.color }}>
+                Coûts : {cout.value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+            </p>
+          )}
+          {resultat && resultat.value !== undefined && (
              <p style={{ color: resultat.color }}>
                 Résultat : {resultat.value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
             </p>
@@ -103,6 +104,27 @@ export function ProfitabilityProjection() {
   const { costs } = useCostStore();
 
   const isComparativeMode = selectedService === 'Tous les services' && viewMode === 'comparative';
+
+  const chartConfig = React.useMemo(() => {
+    const serviceColor = selectedService !== 'Tous les services' 
+        ? serviceColorMap[selectedService as keyof typeof serviceColorMap] 
+        : 'hsl(var(--chart-1))';
+
+    return {
+      population: { label: 'Population', color: 'hsl(var(--chart-4))' },
+      recettes: { label: 'Recettes', color: serviceColor },
+      cout: { label: "Coûts", color: serviceColor },
+      resultat: { label: "Résultat d'exploitation", color: 'hsl(var(--accent))' },
+      geoter: { label: 'Recettes GEOTER', color: serviceColorMap.GEOTER },
+      spanc: { label: 'Recettes SPANC', color: serviceColorMap.SPANC },
+      route: { label: 'Recettes ROUTE', color: serviceColorMap.ROUTE },
+      ads: { label: 'Recettes ADS', color: serviceColorMap.ADS },
+      cout_geoter: { label: 'Coût GEOTER', color: serviceColorMap.GEOTER },
+      cout_spanc: { label: 'Coût SPANC', color: serviceColorMap.SPANC },
+      cout_route: { label: 'Coût ROUTE', color: serviceColorMap.ROUTE },
+      cout_ads: { label: 'Coût ADS', color: serviceColorMap.ADS },
+    };
+  }, [selectedService]);
 
   const costsByService = React.useMemo(() => {
     const result: { [key: string]: number } = {};
@@ -127,7 +149,7 @@ export function ProfitabilityProjection() {
         });
     }
 
-    result['Tous les services'] = Object.values(result).reduce((sum, cost) => sum + cost, 0);
+    result['Tous les services'] = allServices.reduce((sum, s) => sum + (result[s] || 0), 0);
 
     return result;
   }, [costs]);
@@ -147,7 +169,7 @@ export function ProfitabilityProjection() {
     const serviceRevenueAcc: { [key: string]: number } = {};
     SERVICES.forEach(s => serviceRevenueAcc[s.name] = 0);
 
-    const costForSelectedService = costsByService[selectedService] ?? costsByService['Tous les services'];
+    const costForSelectedView = costsByService[selectedService] ?? 0;
 
     for (let i = 0; i < sortedEntities.length; i++) {
       const entity = sortedEntities[i];
@@ -165,13 +187,14 @@ export function ProfitabilityProjection() {
           recettes = serviceRevenueAcc[selectedService] || 0;
       }
 
-      const resultat = recettes - costForSelectedService;
+      const resultat = recettes - costForSelectedView;
 
       const dataPoint: any = {
         adherentCount: i + 1,
         population: currentPopulation,
         recettes,
         resultat,
+        cout: costForSelectedView,
       };
 
       if(isComparativeMode) {
@@ -243,6 +266,7 @@ export function ProfitabilityProjection() {
                 {!isComparativeMode && (
                     <>
                         <Line yAxisId="left" type="monotone" dataKey="recettes" name="Recettes" stroke={chartConfig.recettes.color} strokeWidth={2} dot={false} />
+                        <Line yAxisId="left" type="monotone" dataKey="cout" name="Coûts" stroke={chartConfig.cout.color} strokeWidth={2} dot={false} strokeDasharray="5 5" />
                         <Line yAxisId="left" type="monotone" dataKey="resultat" name="Résultat d'exploitation" stroke={chartConfig.resultat.color} strokeWidth={2} dot={false} />
                     </>
                 )}
