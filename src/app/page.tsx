@@ -22,16 +22,16 @@ export default function DashboardPage() {
       />
       <main className="flex-1 space-y-4 p-4 md:p-8 pt-0">
         <KpiCards />
-        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-7">
+        <div className="grid grid-cols-1 xl:grid-cols-7 gap-4">
           <div className="xl:col-span-4 space-y-4">
             <MainChart />
+            <ProfitabilityProjection />
           </div>
           <div className="xl:col-span-3">
              <ScenarioControls />
           </div>
         </div>
         <div className="grid gap-4">
-            <ProfitabilityProjection />
             <div className="max-w-4xl mx-auto w-full">
                 <AiOptimizer />
             </div>

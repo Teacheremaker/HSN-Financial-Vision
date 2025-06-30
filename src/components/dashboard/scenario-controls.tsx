@@ -12,7 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { useScenarioStore, type AdoptionRates, SERVICES, initialScenarioState, type Scenario, type Service } from "@/hooks/use-scenario-store";
 import { Input } from "@/components/ui/input";
 import { TrendingUp, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight } from "lucide-react";
@@ -22,6 +21,13 @@ import { useCostStore } from "@/hooks/use-cost-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+
 
 const serviceColorHsl: Record<Service, string> = {
   GEOTER: "217.2 91.2% 59.8%", // chart-1
@@ -244,86 +250,82 @@ export function ScenarioControls() {
           Ajustez les paramètres pour modéliser différents avenirs financiers.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Période de projection</Label>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-1">
-              <Label htmlFor="start-year" className="text-xs text-muted-foreground">Début</Label>
-              <Input
-                id="start-year"
-                type="number"
-                value={startYear}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  if (!isNaN(val)) setStartYear(val);
-                }}
-                min="2020"
-                max={endYear - 1}
-              />
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor="end-year" className="text-xs text-muted-foreground">Fin</Label>
-              <Input
-                id="end-year"
-                type="number"
-                value={endYear}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  if (!isNaN(val)) setEndYear(val);
-                }}
-                min={startYear + 1}
-                max="2050"
-              />
-            </div>
-          </div>
-        </div>
-        <Separator />
-        <div className="space-y-4 pt-4">
-            <div>
-                <Label className="text-sm font-medium">Taux d'adoption par service (en plus des entités déjà inscrites)</Label>
-                <div className="space-y-4 pt-2">
-                    {SERVICES.map((service) => (
-                        <ParameterSlider
-                            key={service}
-                            label={service}
-                            value={scenario.adoptionRates[service]}
-                            onValueChange={(value) => updateAdoptionRate(service, value)}
-                            color={serviceColorHsl[service]}
-                        />
-                    ))}
-                </div>
-            </div>
-            <Separator />
-            <div>
-                <Label className="text-sm font-medium">Paramètres généraux</Label>
-                <div className="space-y-4 pt-2">
-                    <ParameterSlider
-                        label="Augmentation des tarifs"
-                        value={scenario.priceIncrease}
-                        onValueChange={(value) => updateScenarioValue('priceIncrease', value)}
+      <CardContent className="pt-0">
+        <Accordion type="multiple" defaultValue={['adoption', 'general']} className="w-full">
+          <AccordionItem value="adoption">
+            <AccordionTrigger className="py-3 text-sm font-medium">Taux d'adoption par service</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4 pt-1">
+                {SERVICES.map((service) => (
+                  <ParameterSlider
+                    key={service}
+                    label={service}
+                    value={scenario.adoptionRates[service]}
+                    onValueChange={(value) => updateAdoptionRate(service, value)}
+                    color={serviceColorHsl[service]}
+                  />
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="general">
+            <AccordionTrigger className="py-3 text-sm font-medium">Paramètres et période</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4 pt-1">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Période de projection</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      id="start-year"
+                      type="number"
+                      value={startYear}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val)) setStartYear(val);
+                      }}
+                      min="2020"
+                      max={endYear - 1}
                     />
-                    <ParameterSlider
-                        label="Taux d'indexation"
-                        value={scenario.indexationRate}
-                        onValueChange={(value) => updateScenarioValue('indexationRate', value)}
+                    <Input
+                      id="end-year"
+                      type="number"
+                      value={endYear}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val)) setEndYear(val);
+                      }}
+                      min={startYear + 1}
+                      max="2050"
                     />
+                  </div>
                 </div>
-            </div>
-            <Separator />
-            <div className="flex items-center space-x-2 pt-2">
-                <Switch id="autosave-scenario" defaultChecked />
-                <Label htmlFor="autosave-scenario">
-                    Sauvegarde auto.
-                </Label>
-            </div>
-        </div>
-        <Separator />
-         <div className="space-y-2">
-            <h3 className="text-sm font-medium">Analyse de sensibilité</h3>
-             <div className="pt-2">
-                <RoiCard />
-             </div>
+                <ParameterSlider
+                  label="Augmentation des tarifs"
+                  value={scenario.priceIncrease}
+                  onValueChange={(value) => updateScenarioValue('priceIncrease', value)}
+                />
+                <ParameterSlider
+                  label="Taux d'indexation"
+                  value={scenario.indexationRate}
+                  onValueChange={(value) => updateScenarioValue('indexationRate', value)}
+                />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="sensitivity" className="border-b-0">
+             <AccordionTrigger className="py-3 text-sm font-medium">Analyse de sensibilité</AccordionTrigger>
+             <AccordionContent>
+                 <div className="pt-1">
+                    <RoiCard />
+                 </div>
+             </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+        <div className="flex items-center space-x-2 px-1 pt-4">
+            <Switch id="autosave-scenario" defaultChecked />
+            <Label htmlFor="autosave-scenario" className="font-normal">
+                Sauvegarde auto.
+            </Label>
         </div>
       </CardContent>
     </Card>
