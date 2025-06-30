@@ -1,4 +1,3 @@
-# Firebase Studio
 HSN-Financial-Vision
 
 Aperçu du Projet
