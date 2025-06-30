@@ -32,21 +32,13 @@ import { useTariffStore } from "@/hooks/use-tariff-store";
 import { useCostStore } from "@/hooks/use-cost-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
 
-const chartConfig = {
-  baseRevenue: {
-    label: "Revenu de base",
-    color: "hsl(var(--chart-1))",
-  },
-  adoptionRevenue: {
-    label: "Revenu d'adoption",
-    color: "hsl(var(--chart-2))",
-  },
-  cost: {
-    label: "Coûts opérationnels",
-    color: "hsl(var(--chart-5))",
-  },
+const serviceColorValues = {
+  GEOTER: "var(--chart-1)",
+  SPANC: "var(--chart-2)",
+  ROUTE: "var(--chart-3)",
+  ADS: "var(--chart-5)",
+  "Tous les services": "var(--chart-1)", // Default for safety
 };
-
 
 const servicesForFilter = ['Tous les services', ...SERVICES];
 
@@ -105,6 +97,33 @@ export function MainChart() {
   }, [startYear, endYear]);
 
   const isAllServicesView = selectedService === 'Tous les services';
+
+  const chartConfig = useMemo(() => {
+    if (isAllServicesView) {
+        return {
+          baseRevenue: { label: "Revenu de base", color: "hsl(var(--chart-1))" },
+          adoptionRevenue: { label: "Revenu d'adoption", color: "hsl(var(--chart-2))" },
+          cost: { label: "Coûts opérationnels", color: "hsl(var(--chart-5))" },
+        };
+    }
+
+    const serviceColorVar = serviceColorValues[selectedService as keyof typeof serviceColorValues] || serviceColorValues["Tous les services"];
+
+    return {
+        baseRevenue: {
+            label: "Revenu de base",
+            color: `hsl(${serviceColorVar} / 0.6)`,
+        },
+        adoptionRevenue: {
+            label: "Revenu d'adoption",
+            color: `hsl(${serviceColorVar})`,
+        },
+        cost: {
+            label: "Coûts opérationnels",
+            color: "hsl(var(--chart-5))",
+        },
+    };
+  }, [selectedService, isAllServicesView]);
 
   const chartData = useMemo(() => {
     const operationalCosts = costs.filter(c => c.category !== 'À amortir');

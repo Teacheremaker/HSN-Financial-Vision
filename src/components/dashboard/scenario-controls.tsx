@@ -23,21 +23,30 @@ import { getTariffPriceForEntity } from "@/lib/projections";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
 import { Button } from "@/components/ui/button";
 
+const serviceColorHsl: Record<Service, string> = {
+  GEOTER: "217.2 91.2% 59.8%", // chart-1
+  SPANC: "158.1 81.3% 40.2%",  // chart-2
+  ROUTE: "48 96% 50%",        // chart-3
+  ADS: "0 0% 50%",           // chart-5
+};
+
 const ParameterSlider = ({
   label,
   value,
   onValueChange,
   valueSuffix = "%",
+  color,
 }: {
   label: string;
   value: number;
   onValueChange: (value: number) => void;
   valueSuffix?: string;
+  color?: string;
 }) => {
   return (
     <div className="grid gap-2">
       <div className="flex justify-between items-center">
-        <Label>{label}</Label>
+        <Label style={color ? { color: `hsl(${color})` } : {}}>{label}</Label>
         <span className="text-sm font-medium">
           {value}
           {valueSuffix}
@@ -48,6 +57,7 @@ const ParameterSlider = ({
         onValueChange={(vals) => onValueChange(vals[0])}
         max={100}
         step={1}
+        style={color ? { "--primary": color } as React.CSSProperties : {}}
       />
     </div>
   );
@@ -274,6 +284,7 @@ export function ScenarioControls() {
                             label={service}
                             value={scenario.adoptionRates[service]}
                             onValueChange={(value) => updateAdoptionRate(service, value)}
+                            color={serviceColorHsl[service]}
                         />
                     ))}
                 </div>
