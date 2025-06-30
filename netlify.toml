@@ -7,6 +7,11 @@
   # Dossier contenant le build final
   publish = ".next"
 
+# Indique à Netlify de chercher les fonctions dans un répertoire qui n'existe pas.
+# Ceci empêche Netlify de détecter et d'essayer de construire le dossier `functions`
+# qui est destiné à Firebase et non à Netlify, ce qui corrige l'erreur de déploiement.
+functions = "netlify/functions"
+
 [[plugins]]
   # Plugin essentiel pour assurer la compatibilité de toutes les fonctionnalités de Next.js
   # (App Router, Server Actions, etc.) avec Netlify.

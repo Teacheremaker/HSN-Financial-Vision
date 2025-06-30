@@ -2,7 +2,7 @@ HSN-Financial-Vision
 
 Aperçu du Projet
 
-HSN-Financial-Vision est une application web de projection financière développée avec Next.js, React et TypeScript, utilisant Firebase pour le backend. Elle permet aux utilisateurs de modéliser différents scénarios financiers en ajustant des paramètres clés tels que les taux d'adoption des services, l'augmentation des tarifs et les taux d'indexation. L'application fournit des indicateurs de performance clés (KPI), des graphiques interactifs et des projections de rentabilité pour aider à la prise de décision stratégique.
+HSN-Financial-Vision est une application web de projection financière développée avec Next.js, React et TypeScript, utilisant les Server Actions de Next.js pour la logique backend. Elle permet aux utilisateurs de modéliser différents scénarios financiers en ajustant des paramètres clés tels que les taux d'adoption des services, l'augmentation des tarifs et les taux d'indexation. L'application fournit des indicateurs de performance clés (KPI), des graphiques interactifs et des projections de rentabilité pour aider à la prise de décision stratégique.
 
 Fonctionnalités Principales
 
@@ -18,7 +18,7 @@ Technologies Utilisées
 
 •Frontend : Next.js, React, TypeScript, Tailwind CSS
 
-•Backend : Firebase (Firestore, Functions)
+•Logique Backend : Next.js Server Actions, Genkit
 
 •Gestion d'état : Zustand (via des hooks personnalisés)
 
@@ -73,13 +73,13 @@ Le projet est organisé de la manière suivante :
 
 •src/components/ : Composants React réutilisables, y compris les composants spécifiques au tableau de bord (dashboard/).
 
+•src/ai/ : Logique liée à l'intelligence artificielle avec Genkit.
+
 •src/hooks/ : Hooks React personnalisés pour la gestion de l'état (par exemple, use-scenario-store.ts, use-entity-store.ts).
 
 •src/lib/ : Fonctions utilitaires et logiques métier (par exemple, projections.ts).
 
 •src/data/ : Fichiers de données statiques ou de simulation.
-
-•functions/ : Fonctions Firebase (Cloud Functions) pour la logique backend.
 
 Contribution
 
