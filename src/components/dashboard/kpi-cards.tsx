@@ -179,25 +179,62 @@ export function KpiCards() {
 
     const calculateSubscriptionRate = (
       year: number,
-      serviceFilter: string
+      serviceFilter: string,
+      scenario: Scenario
     ): number => {
       const totalEntities = entities.length;
       if (totalEntities === 0) return 0;
 
-      let subscribedEntitiesCount = 0;
-      if (serviceFilter === 'Tous les services') {
-        subscribedEntitiesCount = entities.filter((e) =>
-          e.services.some((s) => s.year <= year)
-        ).length;
-      } else {
-        subscribedEntitiesCount = entities.filter((e) =>
-          e.services.some(
-            (s) => s.name === serviceFilter && s.year <= year
+      // 1. Get base subscribers (the "socle")
+      // These are unique entities that will have at least one required service by the target year
+      const baseSubscribedEntityIds = new Set<string>();
+      entities.forEach((entity) => {
+        if (
+          entity.services.some(
+            (s) =>
+              s.year <= year &&
+              (serviceFilter === 'Tous les services' || s.name === serviceFilter)
           )
-        ).length;
-      }
+        ) {
+          baseSubscribedEntityIds.add(entity.id);
+        }
+      });
 
-      return (subscribedEntitiesCount / totalEntities) * 100;
+      // 2. Calculate projected new subscribers from inactive entities
+      const potentialSubscribers = entities.filter((e) => e.statut === 'Inactif');
+      const projectedSubscribedEntityIds = new Set<string>();
+
+      const servicesForAdoption =
+        serviceFilter === 'Tous les services'
+          ? SERVICES
+          : [serviceFilter as Service];
+
+      servicesForAdoption.forEach((service) => {
+        const adoptionRate =
+          scenario.adoptionRates[service as keyof AdoptionRates] / 100;
+        
+        // Find entities from the potential pool that don't have this specific service yet
+        const potentialForService = potentialSubscribers.filter(
+          (e) => !e.services.some((s) => s.name === service)
+        );
+        
+        const numToAdopt = Math.round(potentialForService.length * adoptionRate);
+
+        // Add a portion of these potential entities to the projected set
+        for (let i = 0; i < numToAdopt; i++) {
+          if (potentialForService[i]) {
+            projectedSubscribedEntityIds.add(potentialForService[i].id);
+          }
+        }
+      });
+      
+      // 3. Combine base and projected subscribers for a final unique count
+      const finalSubscribedIds = new Set([
+        ...baseSubscribedEntityIds,
+        ...projectedSubscribedEntityIds,
+      ]);
+
+      return (finalSubscribedIds.size / totalEntities) * 100;
     };
 
     const currentValuesForRevenueYear = calculateAnnualValues(
@@ -241,11 +278,13 @@ export function KpiCards() {
 
     const currentSubscriptionRate = calculateSubscriptionRate(
       endYear,
-      selectedService
+      selectedService,
+      scenario
     );
     const initialSubscriptionRate = calculateSubscriptionRate(
       startYear,
-      selectedService
+      selectedService,
+      initialScenarioState
     );
     const subscriptionChange = currentSubscriptionRate - initialSubscriptionRate;
     const subscriptionChangeText = `${
