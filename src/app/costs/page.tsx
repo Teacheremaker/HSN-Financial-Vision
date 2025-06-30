@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { PlusCircle, Save, MoreHorizontal, Trash2 } from "lucide-react";
+import { PlusCircle, Save, MoreHorizontal, Trash2, Download } from "lucide-react";
+import * as XLSX from 'xlsx';
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,12 +77,59 @@ export default function CostsPage() {
         });
     };
 
+    const handleExport = () => {
+        const yearsArray = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
+    
+        const dataForExport = costs
+            .filter(cost => cost.category !== 'À amortir') // Exclure les lignes d'investissement pur
+            .map(cost => {
+                const rowData: { [key: string]: string | number } = {
+                    'Service': cost.service === 'Global' ? 'Coûts Mutualisés' : cost.service,
+                    'Élément de Coût': cost.costItem,
+                    'Catégorie': cost.category,
+                    'Coût de Base Annuel': cost.annualCost,
+                    'Notes': cost.notes || '',
+                };
+    
+                yearsArray.forEach(year => {
+                    let projectedCost = cost.annualCost;
+                    const indexationFactor = Math.pow(1 + (scenario.indexationRate / 100), year > startYear ? year - startYear : 0);
+    
+                    if ((cost.category === 'Fixe' || cost.category === 'Variable')) {
+                        projectedCost *= indexationFactor;
+                    }
+                    
+                    if (cost.category === 'Amortissement') {
+                        const start = cost.amortizationStartYear ?? 0;
+                        const duration = cost.amortizationDuration ?? 0;
+                        if (duration === 0 || year < start || year >= start + duration) {
+                            projectedCost = 0;
+                        }
+                    }
+                    
+                    rowData[`Coût Projeté ${year}`] = parseFloat(projectedCost.toFixed(2));
+                });
+                return rowData;
+            });
+    
+        const worksheet = XLSX.utils.json_to_sheet(dataForExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Coûts Opérationnels');
+    
+        // Ajuster la largeur des colonnes
+        const cols = Object.keys(dataForExport[0] || {}).map(key => ({
+             wch: key.includes('Élément de Coût') ? 40 : (key.length < 15 ? 20 : key.length + 5) 
+        }));
+        worksheet['!cols'] = cols;
+    
+        XLSX.writeFile(workbook, 'projection_couts_operationnels.xlsx');
+    };
+
     const handleUpdate = (id: string, field: keyof OperationalCost, value: any) => {
         const originalCost = costs.find(c => c.id === id);
         if (!originalCost) return;
 
         let baseCostValue = value;
-        // If editing annual cost, we must back-calculate the base cost from the displayed (potentially indexed) value.
         if (field === 'annualCost') {
             const indexationFactor = Math.pow(1 + (scenario.indexationRate / 100), selectedYear > startYear ? selectedYear - startYear : 0);
             if ((originalCost.category === 'Fixe' || originalCost.category === 'Variable') && selectedYear > startYear && indexationFactor > 0) {
@@ -90,11 +138,8 @@ export default function CostsPage() {
         }
         
         updateCost(id, field, baseCostValue);
-
-        // Represent the cost *after* the update to pass to amortization logic, preventing state lag issues
         const updatedCostData = { ...originalCost, [field]: baseCostValue };
         
-        // If the updated cost is an investment, recalculate the amortization
         if (updatedCostData.category === 'À amortir') {
              const amortizationLine = costs.find(c => c.service === updatedCostData.service && c.category === 'Amortissement');
              if (amortizationLine) {
@@ -167,6 +212,10 @@ export default function CostsPage() {
                      <Button variant="outline" onClick={handleAddNew}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Ajouter un Coût
+                    </Button>
+                    <Button variant="outline" onClick={handleExport}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Exporter
                     </Button>
                     <Button onClick={handleSaveChanges}>
                         <Save className="mr-2 h-4 w-4" />
