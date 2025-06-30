@@ -3,10 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'Poppins', sans-serif;
-}
-
 @layer base {
   :root {
     --background: 210 40% 98%;
