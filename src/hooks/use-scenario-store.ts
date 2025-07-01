@@ -28,6 +28,7 @@ type Actions = {
     value: number
   ) => void;
   addServiceToScenario: (serviceName: string) => void;
+  removeServiceFromScenario: (serviceName: string) => void;
   setStartYear: (year: number) => void;
   setEndYear: (year: number) => void;
 };
@@ -72,6 +73,16 @@ export const useScenarioStore = create<State & Actions>((set) => ({
       }
     }
   })),
+  removeServiceFromScenario: (serviceName: string) => set((state) => {
+    const newAdoptionRates = { ...state.scenario.adoptionRates };
+    delete newAdoptionRates[serviceName];
+    return {
+      scenario: {
+        ...state.scenario,
+        adoptionRates: newAdoptionRates,
+      }
+    };
+  }),
   setStartYear: (year) => set({ startYear: year }),
   setEndYear: (year) => set({ endYear: year }),
 }));

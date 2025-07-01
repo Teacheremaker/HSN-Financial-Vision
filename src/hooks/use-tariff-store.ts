@@ -13,6 +13,7 @@ type Actions = {
   updateTariff: (id: string, field: keyof Tariff, value: any) => void;
   addTariff: (tariff: Tariff) => void;
   deleteTariff: (id: string) => void;
+  deleteTariffsByService: (serviceName: string) => void;
 };
 
 export const useTariffStore = create<State & Actions>((set) => ({
@@ -28,5 +29,8 @@ export const useTariffStore = create<State & Actions>((set) => ({
   })),
   deleteTariff: (id) => set((state) => ({
     tariffs: state.tariffs.filter(tariff => tariff.id !== id),
+  })),
+  deleteTariffsByService: (serviceName) => set((state) => ({
+    tariffs: state.tariffs.filter(tariff => tariff.service !== serviceName),
   })),
 }));

@@ -4,6 +4,9 @@
 import { create } from 'zustand';
 import { useScenarioStore } from './use-scenario-store';
 import type { ServiceDefinition } from '@/types';
+import { useTariffStore } from './use-tariff-store';
+import { useCostStore } from './use-cost-store';
+import { useEntityStore } from './use-entity-store';
 
 export const PALETTE_COLORS = [
     // Blues
@@ -33,6 +36,7 @@ type State = {
 
 type Actions = {
   addService: (name: string, color: string) => void;
+  deleteService: (name: string) => void;
   getServiceNames: () => string[];
 };
 
@@ -48,7 +52,17 @@ export const useServiceStore = create<State & Actions>((set, get) => ({
     // Also update the scenario store
     useScenarioStore.getState().addServiceToScenario(name);
   },
+  deleteService: (name) => {
+    // Call cleanup functions in other stores first
+    useScenarioStore.getState().removeServiceFromScenario(name);
+    useTariffStore.getState().deleteTariffsByService(name);
+    useCostStore.getState().deleteCostsByService(name);
+    useEntityStore.getState().removeServiceFromEntities(name);
+
+    // Then, remove the service from this store
+    set((state) => ({
+      services: state.services.filter(service => service.name !== name),
+    }));
+  },
   getServiceNames: () => get().services.map(s => s.name),
 }));
-
-    

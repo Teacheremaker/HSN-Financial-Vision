@@ -13,6 +13,7 @@ type Actions = {
   updateEntity: (id: string, columnId: string, value: any) => void;
   deleteEntity: (id: string) => void;
   addEntity: (entity: Entity) => void;
+  removeServiceFromEntities: (serviceName: string) => void;
 };
 
 export const useEntityStore = create<State & Actions>((set) => ({
@@ -34,5 +35,11 @@ export const useEntityStore = create<State & Actions>((set) => ({
   })),
   addEntity: (entity) => set((state) => ({ 
     entities: [...state.entities, entity] 
+  })),
+  removeServiceFromEntities: (serviceName: string) => set((state) => ({
+    entities: state.entities.map(entity => ({
+      ...entity,
+      services: entity.services.filter(service => service.name !== serviceName),
+    })),
   })),
 }));

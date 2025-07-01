@@ -1,6 +1,6 @@
-
 'use client';
 
+import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,12 +9,29 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useServiceStore, PALETTE_COLORS } from '@/hooks/use-service-store';
+import { useServiceStore, PALETTE_COLORS, type ServiceDefinition } from '@/hooks/use-service-store';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Check } from 'lucide-react';
+import { PlusCircle, Check, MoreVertical, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -26,8 +43,9 @@ const formSchema = z.object({
 });
 
 export default function ServicesPage() {
-  const { services, addService } = useServiceStore();
+  const { services, addService, deleteService } = useServiceStore();
   const { toast } = useToast();
+  const [serviceToDelete, setServiceToDelete] = React.useState<ServiceDefinition | null>(null);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,6 +72,17 @@ export default function ServicesPage() {
     });
     form.reset();
   }
+
+  const handleDeleteConfirm = () => {
+    if (serviceToDelete) {
+        deleteService(serviceToDelete.name);
+        toast({
+            title: "Service supprimé",
+            description: `Le service "${serviceToDelete.name}" et toutes ses données associées ont été supprimés.`,
+        });
+        setServiceToDelete(null);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -182,13 +211,48 @@ export default function ServicesPage() {
                              <div className="h-4 w-4 rounded-full" style={{ backgroundColor: service.color }} />
                              <span className="font-medium">{service.name}</span>
                            </div>
-                           {/* Delete functionality can be added here later */}
+                           <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                        <span className="sr-only">Ouvrir le menu</span>
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                        className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                        onClick={() => setServiceToDelete(service)}
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Supprimer
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </li>
                     ))}
                 </ul>
               </CardContent>
             </Card>
         </div>
+        <AlertDialog open={!!serviceToDelete} onOpenChange={(open) => !open && setServiceToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Cette action est irréversible. La suppression du service "{serviceToDelete?.name}" entraînera la suppression de tous les tarifs, coûts et souscriptions associés dans l'ensemble de l'application.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={handleDeleteConfirm}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                        Oui, supprimer
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

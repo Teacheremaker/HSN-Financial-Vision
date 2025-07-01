@@ -13,6 +13,7 @@ type Actions = {
   updateCost: (id: string, field: keyof OperationalCost, value: any) => void;
   addCost: (cost: OperationalCost) => void;
   deleteCost: (id: string) => void;
+  deleteCostsByService: (serviceName: string) => void;
 };
 
 export const useCostStore = create<State & Actions>((set) => ({
@@ -28,5 +29,8 @@ export const useCostStore = create<State & Actions>((set) => ({
   })),
   deleteCost: (id) => set((state) => ({
     costs: state.costs.filter(cost => cost.id !== id),
+  })),
+  deleteCostsByService: (serviceName) => set((state) => ({
+    costs: state.costs.filter(cost => cost.service !== serviceName),
   })),
 }));
