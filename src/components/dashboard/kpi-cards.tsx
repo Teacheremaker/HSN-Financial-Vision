@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
 import {
   ArrowDownRight,
   ArrowUpRight,
-  DollarSign,
+  Euro,
   Users,
   ChevronLeft,
   ChevronRight,
@@ -392,7 +391,7 @@ export function KpiCards() {
         ),
         change: revenueChangeText,
         changeType: revenueChange >= 0 ? 'increase' : 'decrease',
-        icon: DollarSign,
+        icon: Euro,
       },
       {
         name: adoptionTitle,
