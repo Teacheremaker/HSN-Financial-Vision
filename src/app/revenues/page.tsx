@@ -34,6 +34,7 @@ import { useScenarioStore, SERVICES, type AdoptionRates, type Service } from "@/
 import { useEntityStore } from "@/hooks/use-entity-store";
 import { useTariffStore } from "@/hooks/use-tariff-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
+import { cn } from '@/lib/utils';
 
 const TABS = ['Cumulé', ...SERVICES];
 
@@ -49,6 +50,13 @@ type ModalDetail = {
     entityType: string;
     serviceName: string;
     price: number;
+};
+
+const serviceColorMap: Record<string, string> = {
+    GEOTER: 'data-[state=active]:border-chart-1 text-chart-1',
+    SPANC: 'data-[state=active]:border-chart-2 text-chart-2',
+    ROUTE: 'data-[state=active]:border-chart-3 text-chart-3',
+    ADS: 'data-[state=active]:border-chart-5 text-chart-5',
 };
 
 export default function RevenuesPage() {
@@ -231,9 +239,17 @@ export default function RevenuesPage() {
                     </CardHeader>
                     <CardContent>
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                            <TabsList>
+                            <TabsList className="bg-transparent p-0">
                                 {TABS.map((tab) => (
-                                    <TabsTrigger key={tab} value={tab}>
+                                    <TabsTrigger
+                                        key={tab}
+                                        value={tab}
+                                        className={cn(
+                                            "rounded-none border-b-2 border-transparent p-2 transition-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-semibold data-[state=inactive]:opacity-60",
+                                            "data-[state=active]:border-primary data-[state=active]:text-primary",
+                                            serviceColorMap[tab]
+                                        )}
+                                    >
                                         {tab}
                                     </TabsTrigger>
                                 ))}
