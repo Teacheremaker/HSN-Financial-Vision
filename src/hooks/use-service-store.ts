@@ -43,14 +43,18 @@ import type { ServiceDefinition } from '@/types';
 >>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
 
 export const PALETTE_COLORS = [
-    'hsl(var(--chart-1))', 
-    'hsl(var(--chart-2))', 
-    'hsl(var(--chart-3))', 
-    'hsl(var(--chart-4))', 
-    'hsl(var(--chart-5))',
-    'hsl(262, 80%, 50%)', // A purple
-    'hsl(330, 80%, 55%)', // A pink
-    'hsl(210, 85%, 55%)', // A brighter blue
+    // Blues
+    '#0077b6', '#48cae4', '#90e0ef', '#ade8f4',
+    // Greens
+    '#2d6a4f', '#40916c', '#52b788', '#b7e4c7',
+    // Oranges / Yellows
+    '#d95f02', '#f77f00', '#fcbf49', '#eae2b7',
+    // Reds
+    '#ae2012', '#d00000', '#e85d04', '#ffba08',
+    // Purples
+    '#5a189a', '#9d4edd', '#c77dff', '#e0aaff',
+    // Greys
+    '#000000', '#495057', '#adb5bd', '#dee2e6',
 ];
 
 const initialServices: ServiceDefinition[] = [

@@ -52,7 +52,7 @@ import { PlusCircle, Trash2 } from 'lucide-react';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useServiceStore, PALETTE_COLORS } from '@/hooks/use-service-store';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 >>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
 
@@ -376,5 +376,3 @@ export default function ServicesPage() {
     </div>
   );
 }
-
-    
