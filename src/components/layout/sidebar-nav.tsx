@@ -1,13 +1,8 @@
-
 "use client"
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-<<<<<<< HEAD
 import { Coins, LayoutDashboard, Sheet, Users, Euro, Wrench } from "lucide-react";
-=======
-import { Coins, LayoutDashboard, Sheet, Users, DollarSign, Wrench } from "lucide-react";
->>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
 
 import {
   SidebarMenu,
