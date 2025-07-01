@@ -1,5 +1,5 @@
 
-import type { Entity, MultiSelectOption } from '@/types';
+import type { Entity } from '@/types';
 
 export const initialEntities: Entity[] = [
   { id: 'ENT-001', nom: 'CC des Savoir-Faire', entityType: 'Communauté de communes', population: 219, type: 'Fondatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2025}]},
@@ -95,7 +95,7 @@ export const initialEntities: Entity[] = [
   { id: 'ENT-091', nom: 'VY-LES-RUPT', entityType: 'Commune', population: 78, type: 'Utilisatrice', statut: 'Inactif', services: []},
   { id: 'ENT-092', nom: 'LA VERNOTTE', entityType: 'Commune', population: 78, type: 'Utilisatrice', statut: 'Inactif', services: []},
   { id: 'ENT-093', nom: 'LA ROSIERE', entityType: 'Commune', population: 80, type: 'Utilisatrice', statut: 'Inactif', services: []},
-  { id: 'ENT-094', nom: 'VELLOREILLE-LES-CHOYE', entityType: 'Commune', population: 80, type: 'Utilisatrice', statut: 'Inactif', services: []},
+  { id: 'ENT-094', nom: 'VELLEOREILLE-LES-CHOYE', entityType: 'Commune', population: 80, type: 'Utilisatrice', statut: 'Inactif', services: []},
   { id: 'ENT-095', nom: 'SAINT-FERJEUX', entityType: 'Commune', population: 80, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2026}]},
   { id: 'ENT-096', nom: 'ORMENANS', entityType: 'Commune', population: 82, type: 'Utilisatrice', statut: 'Inactif', services: []},
   { id: 'ENT-097', nom: 'COLOMBOTTE', entityType: 'Commune', population: 82, type: 'Utilisatrice', statut: 'Inactif', services: []},
@@ -564,11 +564,4 @@ export const initialEntities: Entity[] = [
   // Adding your original illustrative samples at the end
   { id: 'ENT-560', nom: 'Syndicat Intercommunal Franche-Comté', entityType: 'Syndicat', population: 25000, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2027}, {name: 'SPANC', year: 2026}, {name: 'ROUTE', year: 2025}, {name: 'ADS', year: 2027}]},
   { id: 'ENT-561', nom: 'Commune de Gray', entityType: 'Commune', population: 5500, type: 'Utilisatrice', statut: 'Actif', services: [{name: 'GEOTER', year: 2025}, {name: 'ROUTE', year: 2026}]}
-];
-
-export const SERVICE_OPTIONS: MultiSelectOption[] = [
-  { value: "GEOTER", label: "GEOTER" },
-  { value: "SPANC", label: "SPANC" },
-  { value: "ROUTE", label: "ROUTE" },
-  { value: "ADS", label: "ADS" },
 ];

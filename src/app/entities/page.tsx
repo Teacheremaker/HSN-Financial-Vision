@@ -56,7 +56,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/layout/header';
-import type { Entity, ServiceSubscription, EntityType } from '@/types';
+import type { Entity, ServiceSubscription, EntityType, MultiSelectOption } from '@/types';
 import {
   Select,
   SelectContent,
@@ -64,14 +64,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { Label } from '@/components/ui/label';
 import { useEntityStore } from '@/hooks/use-entity-store';
-import { SERVICE_OPTIONS } from '@/data/entities';
+import { useServiceStore } from '@/hooks/use-service-store';
 
 const EditableCell = ({ getValue, row, column, table }) => {
   const initialValue = getValue();
-  const tableMeta = table.options.meta;
+  const tableMeta = table.options.meta as any;
   const isEditing = tableMeta?.editingRowId === row.id;
 
   if (!isEditing) {
@@ -176,7 +176,7 @@ const EditableCell = ({ getValue, row, column, table }) => {
         return (
             <div className="space-y-2 min-w-[250px]">
                 <MultiSelect
-                    options={SERVICE_OPTIONS}
+                    options={tableMeta?.serviceOptions || []}
                     selected={selectedServiceNames}
                     onChange={handleServiceSelectionChange}
                     className="w-full"
@@ -289,6 +289,8 @@ const parseCsv = (csvText: string): Entity[] => {
 
 export default function EntitiesPage() {
   const { entities, setEntities, updateEntity, deleteEntity, addEntity } = useEntityStore();
+  const { getServiceNames } = useServiceStore();
+  
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [editingRowId, setEditingRowId] = React.useState<string | null>(null);
@@ -302,6 +304,10 @@ export default function EntitiesPage() {
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  const serviceOptions: MultiSelectOption[] = React.useMemo(() => {
+    return getServiceNames().map(name => ({ value: name, label: name }));
+  }, [getServiceNames]);
+  
   const yearsWithServices = React.useMemo(() => {
     const years = [];
     for (let year = 2025; year <= 2032; year++) {
@@ -539,6 +545,7 @@ export default function EntitiesPage() {
       deleteRow: (entityId: string) => {
         deleteEntity(entityId);
       },
+      serviceOptions,
     },
   });
 
@@ -623,7 +630,7 @@ export default function EntitiesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les services</SelectItem>
-                  {SERVICE_OPTIONS.map((option) => (
+                  {serviceOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>

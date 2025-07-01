@@ -25,22 +25,13 @@ import {
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart"
-import { useScenarioStore, SERVICES, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
+import { useScenarioStore, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
+import { useServiceStore } from "@/hooks/use-service-store";
 import { useEntityStore } from "@/hooks/use-entity-store";
 import { useTariffStore } from "@/hooks/use-tariff-store";
 import { useCostStore } from "@/hooks/use-cost-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
-
-const serviceColorValues = {
-  GEOTER: "var(--chart-1)",
-  SPANC: "var(--chart-2)",
-  ROUTE: "var(--chart-3)",
-  ADS: "var(--chart-5)",
-  "Tous les services": "var(--chart-1)", // Default for safety
-};
-
-const servicesForFilter = ['Tous les services', ...SERVICES];
 
 const CustomTooltipContent = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -87,10 +78,14 @@ const CustomTooltipContent = ({ active, payload, label }: any) => {
 export function MainChart() {
   const { scenario, startYear, endYear } = useScenarioStore();
   const { selectedService, setSelectedService } = useChartFilterStore();
+  const { services: serviceDefinitions } = useServiceStore();
   const { entities } = useEntityStore();
   const { tariffs } = useTariffStore();
   const { costs } = useCostStore();
 
+  const serviceNames = useMemo(() => serviceDefinitions.map(s => s.name), [serviceDefinitions]);
+  const servicesForFilter = useMemo(() => ['Tous les services', ...serviceNames], [serviceNames]);
+  
   const years = useMemo(() => {
     if (startYear > endYear) return [];
     return Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i)
@@ -99,24 +94,23 @@ export function MainChart() {
   const isAllServicesView = selectedService === 'Tous les services';
 
   const chartConfig = useMemo(() => {
-    const serviceColorVar = serviceColorValues[selectedService as keyof typeof serviceColorValues] || serviceColorValues["Tous les services"];
-    
-    return {
-      GEOTER: { label: "GEOTER", color: `hsl(${serviceColorValues.GEOTER})` },
-      SPANC: { label: "SPANC", color: `hsl(${serviceColorValues.SPANC})` },
-      ROUTE: { label: "ROUTE", color: `hsl(${serviceColorValues.ROUTE})` },
-      ADS: { label: "ADS", color: `hsl(${serviceColorValues.ADS})` },
-      cost: { label: "Coûts opérationnels", color: "hsl(var(--chart-4))" },
-      baseRevenue: {
-        label: "Revenu de base",
-        color: `hsl(${serviceColorVar} / 0.6)`,
-      },
-      adoptionRevenue: {
-          label: "Revenu d'adoption",
-          color: `hsl(${serviceColorVar})`,
-      },
+    const config: any = {
+        cost: { label: "Coûts opérationnels", color: "hsl(var(--chart-4))" },
     };
-  }, [selectedService]);
+
+    if (isAllServicesView) {
+        serviceDefinitions.forEach(service => {
+            config[service.name] = { label: service.name, color: service.color };
+        });
+    } else {
+        const serviceDef = serviceDefinitions.find(s => s.name === selectedService);
+        const color = serviceDef ? serviceDef.color : 'hsl(var(--chart-1))';
+        config.baseRevenue = { label: "Revenu de base", color: color.replace(')', ' / 0.6)') };
+        config.adoptionRevenue = { label: "Revenu d'adoption", color: color };
+    }
+    
+    return config;
+  }, [selectedService, serviceDefinitions, isAllServicesView]);
 
 
   const chartData = useMemo(() => {
@@ -156,7 +150,7 @@ export function MainChart() {
       
       if (isAllServicesView) {
         let projectedAdherents = 0;
-        SERVICES.forEach(service => {
+        serviceNames.forEach(service => {
             let serviceBaseRevenue = 0;
             let servicePotentialRevenue = 0;
             let potentialAdherentCount = 0;
@@ -181,7 +175,7 @@ export function MainChart() {
                 }
             });
 
-            const adoptionRate = scenario.adoptionRates[service as keyof AdoptionRates] / 100;
+            const adoptionRate = (scenario.adoptionRates[service as keyof AdoptionRates] ?? 0) / 100;
             const serviceAdoptionRevenue = servicePotentialRevenue * adoptionRate;
             projectedAdherents += potentialAdherentCount * adoptionRate;
 
@@ -215,7 +209,7 @@ export function MainChart() {
             }
         });
 
-        const adoptionRate = scenario.adoptionRates[service] / 100;
+        const adoptionRate = (scenario.adoptionRates[service] ?? 0) / 100;
         const adoptionRevenue = potentialRevenue * adoptionRate;
         dataPoint.projectedAdherents = Math.round(potentialAdherentCount * adoptionRate);
 
@@ -228,7 +222,7 @@ export function MainChart() {
       return dataPoint;
     }).sort((a,b) => a.year - b.year);
 
-  }, [scenario, selectedService, costs, years, startYear, isAllServicesView, entities, tariffs]);
+  }, [scenario, selectedService, costs, years, startYear, isAllServicesView, entities, tariffs, serviceNames]);
 
   return (
     <Card>
@@ -272,7 +266,7 @@ export function MainChart() {
             />
             <ChartLegend content={<ChartLegendContent />} />
             
-            {SERVICES.map((service) => (
+            {serviceNames.map((service) => (
               <Bar 
                   key={service} 
                   dataKey={service} 

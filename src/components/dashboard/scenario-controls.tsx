@@ -12,7 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useScenarioStore, type AdoptionRates, SERVICES, initialScenarioState, type Scenario, type Service } from "@/hooks/use-scenario-store";
+import { useScenarioStore, type AdoptionRates, initialScenarioState, type Scenario, type Service } from "@/hooks/use-scenario-store";
+import { useServiceStore } from "@/hooks/use-service-store";
 import { Input } from "@/components/ui/input";
 import { TrendingUp, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEntityStore } from "@/hooks/use-entity-store";
@@ -28,13 +29,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 
-
-const serviceColorHsl: Record<Service, string> = {
-  GEOTER: "217.2 91.2% 59.8%", // chart-1
-  SPANC: "158.1 81.3% 40.2%",  // chart-2
-  ROUTE: "48 96% 50%",        // chart-3
-  ADS: "260 80% 60%",           // chart-5 is now violet
-};
 
 const ParameterSlider = ({
   label,
@@ -52,7 +46,7 @@ const ParameterSlider = ({
   return (
     <div className="grid gap-2">
       <div className="flex justify-between items-center">
-        <Label style={color ? { color: `hsl(${color})` } : {}}>{label}</Label>
+        <Label style={color ? { color } : {}}>{label}</Label>
         <span className="text-sm font-medium">
           {value}
           {valueSuffix}
@@ -63,7 +57,7 @@ const ParameterSlider = ({
         onValueChange={(vals) => onValueChange(vals[0])}
         max={100}
         step={1}
-        style={color ? { "--primary": color } as React.CSSProperties : {}}
+        style={color ? { "--slider-track-background": color } as React.CSSProperties : {}}
       />
     </div>
   );
@@ -72,10 +66,13 @@ const ParameterSlider = ({
 const RoiCard = () => {
     const { scenario, startYear, endYear } = useScenarioStore();
     const { selectedService } = useChartFilterStore();
+    const { getServiceNames } = useServiceStore();
     const { entities } = useEntityStore();
     const { tariffs } = useTariffStore();
     const { costs } = useCostStore();
     const [roiYear, setRoiYear] = useState(endYear);
+
+    const SERVICES = getServiceNames();
 
     useEffect(() => {
         if (roiYear < startYear || roiYear > endYear) {
@@ -120,7 +117,7 @@ const RoiCard = () => {
                 });
 
                 const serviceKey = service as keyof AdoptionRates;
-                const adoptionRatePercent = scenario.adoptionRates[serviceKey];
+                const adoptionRatePercent = scenario.adoptionRates[serviceKey] ?? 0;
                 const additionalRevenue = servicePotentialRevenue * (adoptionRatePercent / 100);
 
                 revenue += serviceBaseRevenue + additionalRevenue;
@@ -188,7 +185,7 @@ const RoiCard = () => {
             ChangeIcon,
             serviceName,
         };
-    }, [scenario, costs, entities, tariffs, startYear, endYear, selectedService, roiYear]);
+    }, [scenario, costs, entities, tariffs, startYear, endYear, selectedService, roiYear, SERVICES]);
 
     return (
         <Card>
@@ -241,6 +238,7 @@ const RoiCard = () => {
 
 export function ScenarioControls() {
   const { scenario, updateScenarioValue, updateAdoptionRate, startYear, setStartYear, endYear, setEndYear } = useScenarioStore();
+  const { services } = useServiceStore();
 
   return (
     <Card>
@@ -256,13 +254,13 @@ export function ScenarioControls() {
             <AccordionTrigger className="py-3 text-sm font-medium">Taux d'adoption par service</AccordionTrigger>
             <AccordionContent>
               <div className="space-y-4 pt-1">
-                {SERVICES.map((service) => (
+                {services.map((service) => (
                   <ParameterSlider
-                    key={service}
-                    label={service}
-                    value={scenario.adoptionRates[service]}
-                    onValueChange={(value) => updateAdoptionRate(service, value)}
-                    color={serviceColorHsl[service]}
+                    key={service.name}
+                    label={service.name}
+                    value={scenario.adoptionRates[service.name] ?? 0}
+                    onValueChange={(value) => updateAdoptionRate(service.name, value)}
+                    color={service.color}
                   />
                 ))}
               </div>

@@ -1,8 +1,7 @@
 
 'use client';
 import { create } from 'zustand';
-
-const SERVICES = ["GEOTER", "SPANC", "ROUTE", "ADS"];
+import { useServiceStore } from './use-service-store';
 
 type State = {
   selectedService: string;
@@ -10,11 +9,14 @@ type State = {
 
 type Actions = {
   setSelectedService: (service: string) => void;
-  getServices: () => string[];
+  getServicesForFilter: () => string[];
 };
 
-export const useChartFilterStore = create<State & Actions>((set) => ({
+export const useChartFilterStore = create<State & Actions>((set, get) => ({
   selectedService: 'Tous les services',
   setSelectedService: (service) => set({ selectedService: service }),
-  getServices: () => ['Tous les services', ...SERVICES],
+  getServicesForFilter: () => {
+    const serviceNames = useServiceStore.getState().getServiceNames();
+    return ['Tous les services', ...serviceNames];
+  },
 }));

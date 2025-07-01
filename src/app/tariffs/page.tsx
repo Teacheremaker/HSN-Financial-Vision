@@ -32,22 +32,16 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Tariff } from "@/types";
 import { useToast } from '@/hooks/use-toast';
 import { useTariffStore } from '@/hooks/use-tariff-store';
+import { useServiceStore } from '@/hooks/use-service-store';
 import { cn } from '@/lib/utils';
-
-const services = ["GEOTER", "SPANC", "ROUTE", "ADS"];
-
-const serviceColorMap: Record<string, string> = {
-    GEOTER: 'data-[state=active]:border-chart-1 text-chart-1',
-    SPANC: 'data-[state=active]:border-chart-2 text-chart-2',
-    ROUTE: 'data-[state=active]:border-chart-3 text-chart-3',
-    ADS: 'data-[state=active]:border-chart-5 text-chart-5',
-};
 
 export default function TariffsPage() {
     const { toast } = useToast();
     const { tariffs, updateTariff, addTariff, deleteTariff } = useTariffStore();
+    const { services } = useServiceStore();
+    
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState(services[0] ?? "");
+    const [activeTab, setActiveTab] = useState(services[0]?.name ?? "");
 
     const handleSaveChanges = () => {
         // With Zustand, changes are saved automatically.
@@ -62,6 +56,7 @@ export default function TariffsPage() {
     };
 
     const handleAddNew = () => {
+        if (!activeTab) return;
         const newId = `T-${String(Date.now()).slice(-5)}`;
         const newTariff: Tariff = {
             id: newId,
@@ -130,14 +125,14 @@ export default function TariffsPage() {
                         <TabsList className="bg-transparent p-0">
                             {services.map((service) => (
                                 <TabsTrigger 
-                                    key={service} 
-                                    value={service}
+                                    key={service.name} 
+                                    value={service.name}
                                     className={cn(
                                         "rounded-none border-b-2 border-transparent p-2 transition-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-semibold data-[state=inactive]:opacity-60",
-                                        serviceColorMap[service]
+                                        `data-[state=active]:border-current ${service.colorClass}`
                                     )}
                                 >
-                                    {service}
+                                    {service.name}
                                 </TabsTrigger>
                             ))}
                         </TabsList>

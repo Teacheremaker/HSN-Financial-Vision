@@ -1,12 +1,10 @@
 'use client';
 import { create } from 'zustand';
+import { useServiceStore } from './use-service-store';
 
-export const SERVICES = ["GEOTER", "SPANC", "ROUTE", "ADS"] as const;
-export type Service = typeof SERVICES[number];
+export type Service = string;
 
-export type AdoptionRates = {
-  [key in Service]: number;
-};
+export type AdoptionRates = Record<string, number>;
 
 export type Scenario = {
   adoptionRates: AdoptionRates;
@@ -29,19 +27,25 @@ type Actions = {
     service: Service,
     value: number
   ) => void;
+  addServiceToScenario: (serviceName: string) => void;
   setStartYear: (year: number) => void;
   setEndYear: (year: number) => void;
 };
 
-const initialScenario: Scenario = {
-  adoptionRates: { GEOTER: 0, SPANC: 0, ROUTE: 0, ADS: 0 },
+const initialAdoptionRates: AdoptionRates = useServiceStore.getState().getServiceNames().reduce((acc, name) => {
+    acc[name] = 0;
+    return acc;
+}, {} as AdoptionRates);
+
+export const initialScenarioState: Scenario = {
+  adoptionRates: initialAdoptionRates,
   priceIncrease: 0,
   indexationRate: 1,
 };
 
 
 export const useScenarioStore = create<State & Actions>((set) => ({
-  scenario: initialScenario,
+  scenario: initialScenarioState,
   startYear: 2025,
   endYear: 2033,
   updateScenarioValue: (param, value) => set((state) => ({
@@ -59,8 +63,15 @@ export const useScenarioStore = create<State & Actions>((set) => ({
       }
     },
   })),
+  addServiceToScenario: (serviceName: string) => set((state) => ({
+    scenario: {
+      ...state.scenario,
+      adoptionRates: {
+        ...state.scenario.adoptionRates,
+        [serviceName]: 0, // Initialize new service with 0% adoption
+      }
+    }
+  })),
   setStartYear: (year) => set({ startYear: year }),
   setEndYear: (year) => set({ endYear: year }),
 }));
-
-export const initialScenarioState = initialScenario;

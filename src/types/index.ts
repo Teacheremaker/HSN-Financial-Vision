@@ -57,3 +57,9 @@ export type OperationalCost = {
 };
 
 export type MultiSelectOption = MultiSelectOptionPrimitive;
+
+export type ServiceDefinition = {
+    name: string;
+    color: string;
+    colorClass: string;
+};
