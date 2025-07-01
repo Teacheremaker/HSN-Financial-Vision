@@ -26,11 +26,6 @@ import {
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart"
-<<<<<<< HEAD
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-=======
->>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
 import { useScenarioStore, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
 import { useServiceStore } from "@/hooks/use-service-store";
