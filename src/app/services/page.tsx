@@ -1,4 +1,3 @@
-
 'use client';
 
 <<<<<<< HEAD
@@ -50,9 +49,9 @@ import { PlusCircle, Trash2 } from 'lucide-react';
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
 =======
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useServiceStore, PALETTE_COLORS } from '@/hooks/use-service-store';
+import { useServiceStore, PALETTE_COLORS, type ServiceDefinition } from '@/hooks/use-service-store';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Check } from 'lucide-react';
+import { PlusCircle, Check, MoreVertical, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 >>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
 

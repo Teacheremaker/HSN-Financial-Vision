@@ -141,5 +141,3 @@ export const useServiceStore = create<State & Actions>((set, get) => ({
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
   getServiceNames: () => get().services.map(s => s.name),
 }));
-
-    
