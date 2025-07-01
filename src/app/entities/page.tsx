@@ -56,7 +56,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/layout/header';
-import type { Entity, ServiceSubscription, EntityType } from '@/types';
+import type { Entity, ServiceSubscription, EntityType, MultiSelectOption, ServiceDefinition } from '@/types';
 import {
   Select,
   SelectContent,
@@ -64,14 +64,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { Label } from '@/components/ui/label';
 import { useEntityStore } from '@/hooks/use-entity-store';
-import { SERVICE_OPTIONS } from '@/data/entities';
+import { useServiceStore } from '@/hooks/use-service-store';
 
 const EditableCell = ({ getValue, row, column, table }) => {
   const initialValue = getValue();
-  const tableMeta = table.options.meta;
+  const tableMeta = table.options.meta as any;
   const isEditing = tableMeta?.editingRowId === row.id;
 
   if (!isEditing) {
@@ -83,7 +83,12 @@ const EditableCell = ({ getValue, row, column, table }) => {
       return (
         <div className="flex flex-wrap gap-1">
           {services.map((service) => (
-            <Badge key={service.name} variant="secondary" className="font-normal">
+            <Badge 
+              key={service.name} 
+              variant="default" 
+              className="font-normal text-white"
+              style={{ backgroundColor: tableMeta?.serviceColorMap[service.name] ?? 'hsl(var(--muted))' }}
+            >
               {service.name} ({service.year})
             </Badge>
           ))}
@@ -176,7 +181,7 @@ const EditableCell = ({ getValue, row, column, table }) => {
         return (
             <div className="space-y-2 min-w-[250px]">
                 <MultiSelect
-                    options={SERVICE_OPTIONS}
+                    options={tableMeta?.serviceOptions || []}
                     selected={selectedServiceNames}
                     onChange={handleServiceSelectionChange}
                     className="w-full"
@@ -211,9 +216,9 @@ const EditableCell = ({ getValue, row, column, table }) => {
 
 const generateCsv = (data: Entity[]): string => {
     const headers = ['nom', 'population', 'type', 'entityType', 'statut', 'services'];
-    const csvRows = [headers.join(',')];
+    const csvRows = [`\uFEFF${headers.join(',')}`]; // Add BOM for Excel
     const quote = (field: any) => {
-        const stringField = String(field);
+        const stringField = String(field ?? '');
         if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
             return `"${stringField.replace(/"/g, '""')}"`;
         }
@@ -221,7 +226,7 @@ const generateCsv = (data: Entity[]): string => {
     };
 
     data.forEach(entity => {
-        const servicesString = entity.services.map(s => `${s.name}:${s.year}`).join(';');
+        const servicesString = entity.services.map(s => `${s.name}:${s.year}`).join(',');
         const row = [
             quote(entity.nom),
             quote(entity.population),
@@ -262,7 +267,7 @@ const parseCsv = (csvText: string): Entity[] => {
         }, {} as Record<string, any>);
 
         const services: ServiceSubscription[] = (rowData.services || '')
-            .split(';')
+            .split(',')
             .filter(Boolean)
             .map((s: string) => {
                 const [name, year] = s.split(':');
@@ -289,6 +294,8 @@ const parseCsv = (csvText: string): Entity[] => {
 
 export default function EntitiesPage() {
   const { entities, setEntities, updateEntity, deleteEntity, addEntity } = useEntityStore();
+  const { services: serviceDefinitions, getServiceNames } = useServiceStore();
+  
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [editingRowId, setEditingRowId] = React.useState<string | null>(null);
@@ -301,6 +308,17 @@ export default function EntitiesPage() {
   const [yearFilter, setYearFilter] = React.useState<string>('');
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const serviceOptions: MultiSelectOption[] = React.useMemo(() => {
+    return getServiceNames().map(name => ({ value: name, label: name }));
+  }, [getServiceNames]);
+  
+  const serviceColorMap = React.useMemo(() => 
+    serviceDefinitions.reduce((acc, service) => {
+      acc[service.name] = service.color;
+      return acc;
+    }, {} as Record<string, string>),
+  [serviceDefinitions]);
 
   const yearsWithServices = React.useMemo(() => {
     const years = [];
@@ -325,10 +343,14 @@ export default function EntitiesPage() {
 
   const handleExportTemplate = () => {
     const headers = "nom,population,type,entityType,statut,services";
-    const example1 = "# La colonne 'id' est optionnelle et sera générée automatiquement si absente.\n# Séparez les services par un point-virgule (;) et l'année par un deux-points (:).\n# Exemple pour la colonne services : \"GEOTER:2024;SPANC:2025\"";
-    const example2 = "# Les valeurs possibles pour entityType sont : Commune, Syndicat, Communauté de communes, Communauté d'agglo, Département, Autre.";
-    const csvString = `${headers}\n${example1}\n${example2}`;
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const comments = [
+        "# La colonne 'id' est optionnelle et sera générée automatiquement si absente.",
+        "# Séparez les services par une virgule (,) et l'année par un deux-points (:).",
+        "# Exemple pour la colonne services : \"GEOTER:2024,SPANC:2025\"",
+        "# Les valeurs possibles pour entityType sont : Commune, Syndicat, Communauté de communes, Communauté d'agglo, Département, Autre."
+    ].join('\n');
+    const csvString = `${headers}\n${comments}`;
+    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
@@ -539,6 +561,8 @@ export default function EntitiesPage() {
       deleteRow: (entityId: string) => {
         deleteEntity(entityId);
       },
+      serviceOptions,
+      serviceColorMap,
     },
   });
 
@@ -623,7 +647,7 @@ export default function EntitiesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les services</SelectItem>
-                  {SERVICE_OPTIONS.map((option) => (
+                  {serviceOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -778,3 +802,5 @@ export default function EntitiesPage() {
     </div>
   );
 }
+
+    

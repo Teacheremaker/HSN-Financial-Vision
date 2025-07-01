@@ -32,14 +32,16 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Tariff } from "@/types";
 import { useToast } from '@/hooks/use-toast';
 import { useTariffStore } from '@/hooks/use-tariff-store';
-
-const services = ["GEOTER", "SPANC", "ROUTE", "ADS"];
+import { useServiceStore } from '@/hooks/use-service-store';
+import { cn } from '@/lib/utils';
 
 export default function TariffsPage() {
     const { toast } = useToast();
     const { tariffs, updateTariff, addTariff, deleteTariff } = useTariffStore();
+    const { services } = useServiceStore();
+    
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState(services[0] ?? "");
+    const [activeTab, setActiveTab] = useState(services[0]?.name ?? "");
 
     const handleSaveChanges = () => {
         // With Zustand, changes are saved automatically.
@@ -54,6 +56,7 @@ export default function TariffsPage() {
     };
 
     const handleAddNew = () => {
+        if (!activeTab) return;
         const newId = `T-${String(Date.now()).slice(-5)}`;
         const newTariff: Tariff = {
             id: newId,
@@ -119,10 +122,18 @@ export default function TariffsPage() {
                 </CardHeader>
                 <CardContent>
                     <Tabs value={activeTab} onValueChange={(value) => { setEditingRowId(null); setActiveTab(value); }} className="w-full">
-                        <TabsList>
+                        <TabsList className="bg-transparent p-0">
                             {services.map((service) => (
-                                <TabsTrigger key={service} value={service}>
-                                    {service}
+                                <TabsTrigger 
+                                    key={service.name} 
+                                    value={service.name}
+                                    style={activeTab === service.name ? { color: service.color } : {}}
+                                    className={cn(
+                                        "rounded-none border-b-2 border-transparent p-2 transition-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-semibold data-[state=inactive]:opacity-60",
+                                        "data-[state=active]:border-current"
+                                    )}
+                                >
+                                    {service.name}
                                 </TabsTrigger>
                             ))}
                         </TabsList>
@@ -211,3 +222,5 @@ export default function TariffsPage() {
     </div>
   );
 }
+
+    

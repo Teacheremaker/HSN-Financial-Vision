@@ -4,6 +4,7 @@
 import { useMemo } from "react";
 import * as React from "react";
 import { ComposedChart, Bar, Line, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Info } from "lucide-react";
 
 import {
   Card,
@@ -25,22 +26,15 @@ import {
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart"
-import { useScenarioStore, SERVICES, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useScenarioStore, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
+import { useServiceStore } from "@/hooks/use-service-store";
 import { useEntityStore } from "@/hooks/use-entity-store";
 import { useTariffStore } from "@/hooks/use-tariff-store";
 import { useCostStore } from "@/hooks/use-cost-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
-
-const serviceColorValues = {
-  GEOTER: "var(--chart-1)",
-  SPANC: "var(--chart-2)",
-  ROUTE: "var(--chart-3)",
-  ADS: "var(--chart-5)",
-  "Tous les services": "var(--chart-1)", // Default for safety
-};
-
-const servicesForFilter = ['Tous les services', ...SERVICES];
 
 const CustomTooltipContent = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -87,10 +81,14 @@ const CustomTooltipContent = ({ active, payload, label }: any) => {
 export function MainChart() {
   const { scenario, startYear, endYear } = useScenarioStore();
   const { selectedService, setSelectedService } = useChartFilterStore();
+  const { services: serviceDefinitions } = useServiceStore();
   const { entities } = useEntityStore();
   const { tariffs } = useTariffStore();
   const { costs } = useCostStore();
 
+  const serviceNames = useMemo(() => serviceDefinitions.map(s => s.name), [serviceDefinitions]);
+  const servicesForFilter = useMemo(() => ['Tous les services', ...serviceNames], [serviceNames]);
+  
   const years = useMemo(() => {
     if (startYear > endYear) return [];
     return Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i)
@@ -99,24 +97,23 @@ export function MainChart() {
   const isAllServicesView = selectedService === 'Tous les services';
 
   const chartConfig = useMemo(() => {
-    const serviceColorVar = serviceColorValues[selectedService as keyof typeof serviceColorValues] || serviceColorValues["Tous les services"];
-    
-    return {
-      GEOTER: { label: "GEOTER", color: `hsl(${serviceColorValues.GEOTER})` },
-      SPANC: { label: "SPANC", color: `hsl(${serviceColorValues.SPANC})` },
-      ROUTE: { label: "ROUTE", color: `hsl(${serviceColorValues.ROUTE})` },
-      ADS: { label: "ADS", color: `hsl(${serviceColorValues.ADS})` },
-      cost: { label: "Coûts opérationnels", color: "hsl(var(--chart-4))" },
-      baseRevenue: {
-        label: "Revenu de base",
-        color: `hsl(${serviceColorVar} / 0.6)`,
-      },
-      adoptionRevenue: {
-          label: "Revenu d'adoption",
-          color: `hsl(${serviceColorVar})`,
-      },
+    const config: any = {
+        cost: { label: "Coûts opérationnels", color: "hsl(var(--chart-4))" },
     };
-  }, [selectedService]);
+
+    if (isAllServicesView) {
+        serviceDefinitions.forEach(service => {
+            config[service.name] = { label: service.name, color: service.color };
+        });
+    } else {
+        const serviceDef = serviceDefinitions.find(s => s.name === selectedService);
+        const color = serviceDef ? serviceDef.color : 'hsl(var(--chart-1))';
+        config.baseRevenue = { label: "Revenu de base", color: color.replace(')', ' / 0.6)') };
+        config.adoptionRevenue = { label: "Revenu d'adoption", color: color };
+    }
+    
+    return config;
+  }, [selectedService, serviceDefinitions, isAllServicesView]);
 
 
   const chartData = useMemo(() => {
@@ -156,7 +153,7 @@ export function MainChart() {
       
       if (isAllServicesView) {
         let projectedAdherents = 0;
-        SERVICES.forEach(service => {
+        serviceNames.forEach(service => {
             let serviceBaseRevenue = 0;
             let servicePotentialRevenue = 0;
             let potentialAdherentCount = 0;
@@ -181,7 +178,7 @@ export function MainChart() {
                 }
             });
 
-            const adoptionRate = scenario.adoptionRates[service as keyof AdoptionRates] / 100;
+            const adoptionRate = (scenario.adoptionRates[service as keyof AdoptionRates] ?? 0) / 100;
             const serviceAdoptionRevenue = servicePotentialRevenue * adoptionRate;
             projectedAdherents += potentialAdherentCount * adoptionRate;
 
@@ -215,7 +212,7 @@ export function MainChart() {
             }
         });
 
-        const adoptionRate = scenario.adoptionRates[service] / 100;
+        const adoptionRate = (scenario.adoptionRates[service] ?? 0) / 100;
         const adoptionRevenue = potentialRevenue * adoptionRate;
         dataPoint.projectedAdherents = Math.round(potentialAdherentCount * adoptionRate);
 
@@ -228,13 +225,44 @@ export function MainChart() {
       return dataPoint;
     }).sort((a,b) => a.year - b.year);
 
-  }, [scenario, selectedService, costs, years, startYear, isAllServicesView, entities, tariffs]);
+  }, [scenario, selectedService, costs, years, startYear, isAllServicesView, entities, tariffs, serviceNames]);
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
-          <CardTitle>Projections globales</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>Projections globales</CardTitle>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-5 w-5">
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="start" className="max-w-xs text-sm">
+                    <div className="space-y-3 p-2 font-normal">
+                        <h4 className="font-bold">Méthodes de Calcul</h4>
+                        
+                        <div>
+                            <h5 className="font-semibold" style={{ color: 'hsl(var(--primary))' }}>Revenus</h5>
+                            <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
+                                <li><span className="font-medium text-foreground">Base :</span> Somme des tarifs des adhérents actifs pour l'année.</li>
+                                <li><span className="font-medium text-foreground">Adoption :</span> Somme des tarifs des inactifs multipliée par le taux d'adoption du service.</li>
+                                <li className="text-xs italic pt-1">Le total est ajusté par le taux d'augmentation des tarifs.</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h5 className="font-semibold" style={{ color: 'hsl(var(--chart-4))' }}>Coûts</h5>
+                            <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
+                                <li><span className="font-medium text-foreground">Fixes/Variables :</span> Coût de base ajusté par le taux d'indexation annuel.</li>
+                                <li><span className="font-medium text-foreground">Amortissements :</span> Coûts "À amortir" répartis sur leur durée.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </TooltipContent>
+            </Tooltip>
+          </div>
           <CardDescription>Prévisions de revenus et coûts {startYear} - {endYear} (en milliers d'€)</CardDescription>
         </div>
         <div className="w-full max-w-[200px]">
@@ -272,7 +300,7 @@ export function MainChart() {
             />
             <ChartLegend content={<ChartLegendContent />} />
             
-            {SERVICES.map((service) => (
+            {serviceNames.map((service) => (
               <Bar 
                   key={service} 
                   dataKey={service} 

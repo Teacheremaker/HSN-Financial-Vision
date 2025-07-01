@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -44,19 +43,20 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useCostStore } from '@/hooks/use-cost-store';
 import { useScenarioStore } from '@/hooks/use-scenario-store';
+import { useServiceStore } from '@/hooks/use-service-store';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
-
-
-const services = ["GEOTER", "SPANC", "ROUTE", "ADS", "Global"];
 
 export default function CostsPage() {
     const { toast } = useToast();
     const { costs, updateCost, addCost, deleteCost } = useCostStore();
     const { scenario, startYear, endYear, updateScenarioValue } = useScenarioStore();
+    const { getServiceNames } = useServiceStore();
+    
+    const services = [...getServiceNames(), "Global"];
     
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState('GEOTER');
+    const [activeTab, setActiveTab] = useState(services[0] ?? 'Global');
     const [selectedYear, setSelectedYear] = useState(startYear);
 
     useEffect(() => {

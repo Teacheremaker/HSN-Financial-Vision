@@ -2,9 +2,9 @@
 'use client';
 
 import * as React from 'react';
-import { BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ReferenceLine, Cell } from 'recharts';
+import { BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ReferenceLine, Cell } from 'recharts';
 import * as XLSX from 'xlsx';
-import { Download } from 'lucide-react';
+import { Download, Info } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,19 +12,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChartContainer } from '@/components/ui/chart';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-import { useScenarioStore, SERVICES as allServices, type Service, type AdoptionRates } from '@/hooks/use-scenario-store';
+import { useScenarioStore, type AdoptionRates } from '@/hooks/use-scenario-store';
+import { useServiceStore } from '@/hooks/use-service-store';
 import { useEntityStore } from '@/hooks/use-entity-store';
 import { useTariffStore } from '@/hooks/use-tariff-store';
 import { useCostStore } from '@/hooks/use-cost-store';
 import { getTariffPriceForEntity } from '@/lib/projections';
-
-const serviceColorMap: Record<Service, string> = {
-    GEOTER: 'hsl(var(--chart-1))',
-    SPANC: 'hsl(var(--chart-2))',
-    ROUTE: 'hsl(var(--chart-3))',
-    ADS: 'hsl(var(--chart-5))',
-};
 
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -45,12 +40,21 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function ProfitabilityProjection() {
     const { scenario, startYear, endYear } = useScenarioStore();
+    const { services: serviceDefinitions } = useServiceStore();
     const { entities } = useEntityStore();
     const { tariffs } = useTariffStore();
     const { costs } = useCostStore();
 
     const [selectedYear, setSelectedYear] = React.useState<number>(startYear);
     const [activeTab, setActiveTab] = React.useState('synthesis');
+
+    const allServices = React.useMemo(() => serviceDefinitions.map(s => s.name), [serviceDefinitions]);
+    const serviceColorMap = React.useMemo(() => 
+        serviceDefinitions.reduce((acc, service) => {
+            acc[service.name] = service.color;
+            return acc;
+        }, {} as Record<string, string>), 
+    [serviceDefinitions]);
 
     React.useEffect(() => {
         if (selectedYear < startYear || selectedYear > endYear) {
@@ -89,7 +93,7 @@ export function ProfitabilityProjection() {
                     }
                 });
 
-                const adoptionRate = scenario.adoptionRates[service as keyof AdoptionRates] / 100;
+                const adoptionRate = (scenario.adoptionRates[service as keyof AdoptionRates] ?? 0) / 100;
                 const adoptionRevenue = potentialRevenue * adoptionRate;
                 
                 const finalBaseRevenue = baseRevenue * priceIncreaseFactor;
@@ -129,7 +133,7 @@ export function ProfitabilityProjection() {
                 };
             });
         });
-    }, [scenario, entities, costs, tariffs, startYear, endYear, years]);
+    }, [scenario, entities, costs, tariffs, startYear, endYear, years, allServices]);
 
     const synthesisChartData = React.useMemo(() => {
         return profitabilityData.filter(d => d.year === selectedYear);
@@ -181,7 +185,36 @@ export function ProfitabilityProjection() {
         <Card>
             <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                 <div>
-                    <CardTitle>Analyse de Rentabilité par Service</CardTitle>
+                    <div className="flex items-center gap-2">
+                        <CardTitle>Analyse de Rentabilité par Service</CardTitle>
+                         <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-5 w-5">
+                                    <Info className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" align="start" className="max-w-xs text-sm">
+                                <div className="space-y-3 p-2 font-normal">
+                                    <h4 className="font-bold">Méthodes de Calcul</h4>
+                                    <p className="text-muted-foreground">
+                                        Chaque service est analysé individuellement. Le résultat est la différence entre les recettes générées et les coûts imputés.
+                                    </p>
+                                    <div>
+                                        <h5 className="font-semibold text-primary">Recettes</h5>
+                                        <p className="text-xs text-muted-foreground">
+                                            Inclut les revenus des adhérents existants et les revenus additionnels projetés par les nouvelles adhésions, ajustés par le taux d'augmentation des tarifs.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <h5 className="font-semibold" style={{ color: 'hsl(var(--chart-4))' }}>Coûts</h5>
+                                        <p className="text-xs text-muted-foreground">
+                                            Comprend les coûts directs du service (fixes, variables, amortissements) plus une part des coûts mutualisés (de l'onglet "Global"), le tout ajusté par le taux d'indexation.
+                                        </p>
+                                    </div>
+                                </div>
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
                     <CardDescription>
                         Visualisez la performance financière de chaque service.
                     </CardDescription>
@@ -216,18 +249,18 @@ export function ProfitabilityProjection() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                 <XAxis dataKey="service" />
                                 <YAxis tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`} />
-                                <Tooltip content={<CustomTooltip />} />
+                                <RechartsTooltip content={<CustomTooltip />} />
                                 <Legend />
                                 <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
                                 <Bar dataKey="recettes" name="Recettes" radius={[4, 4, 0, 0]}>
                                     {synthesisChartData.map((entry, index) => (
-                                        <Cell key={`cell-recettes-${index}`} fill={serviceColorMap[entry.service as Service]} fillOpacity={0.6} />
+                                        <Cell key={`cell-recettes-${index}`} fill={serviceColorMap[entry.service]} fillOpacity={0.6} />
                                     ))}
                                 </Bar>
                                 <Bar dataKey="couts" name="Coûts" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
                                 <Bar dataKey="resultat" name="Résultat" radius={[4, 4, 0, 0]}>
                                      {synthesisChartData.map((entry, index) => (
-                                        <Cell key={`cell-resultat-${index}`} fill={serviceColorMap[entry.service as Service]} />
+                                        <Cell key={`cell-resultat-${index}`} fill={serviceColorMap[entry.service]} />
                                     ))}
                                 </Bar>
                             </BarChart>
@@ -239,7 +272,7 @@ export function ProfitabilityProjection() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                 <XAxis dataKey="year" />
                                 <YAxis tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`} />
-                                <Tooltip content={<CustomTooltip />} />
+                                <RechartsTooltip content={<CustomTooltip />} />
                                 <Legend />
                                 <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
                                 {allServices.map(service => (

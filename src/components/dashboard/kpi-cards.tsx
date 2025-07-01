@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
 import {
   ArrowDownRight,
   ArrowUpRight,
-  DollarSign,
+  Euro,
   Users,
   ChevronLeft,
   ChevronRight,
@@ -21,12 +20,12 @@ import type { KpiData } from '@/types';
 import {
   useScenarioStore,
   initialScenarioState,
-  SERVICES,
   type AdoptionRates,
   type Scenario,
   type Service,
 } from '@/hooks/use-scenario-store';
 import { useChartFilterStore } from '@/hooks/use-chart-filter-store';
+import { useServiceStore } from '@/hooks/use-service-store';
 import { useEntityStore } from '@/hooks/use-entity-store';
 import { useTariffStore } from '@/hooks/use-tariff-store';
 import { useCostStore } from '@/hooks/use-cost-store';
@@ -59,11 +58,14 @@ const KpiCard = ({ kpi }: { kpi: KpiData }) => {
 export function KpiCards() {
   const { scenario, startYear, endYear } = useScenarioStore();
   const { selectedService } = useChartFilterStore();
+  const { getServiceNames } = useServiceStore();
   const { entities } = useEntityStore();
   const { tariffs } = useTariffStore();
   const { costs } = useCostStore();
   const [revenueYear, setRevenueYear] = useState(startYear);
   const [costYear, setCostYear] = useState(startYear);
+
+  const SERVICES = getServiceNames();
 
   useEffect(() => {
     if (revenueYear < startYear || revenueYear > endYear) {
@@ -133,7 +135,7 @@ export function KpiCards() {
         
         totalBaseRevenue += serviceBaseRevenue;
         const serviceKey = service as keyof AdoptionRates;
-        const adoptionRatePercent = scenario.adoptionRates[serviceKey];
+        const adoptionRatePercent = scenario.adoptionRates[serviceKey] ?? 0;
         totalAdoptionRevenue += servicePotentialRevenue * (adoptionRatePercent / 100);
       });
 
@@ -211,7 +213,7 @@ export function KpiCards() {
 
       servicesForAdoption.forEach((service) => {
         const adoptionRate =
-          scenario.adoptionRates[service as keyof AdoptionRates] / 100;
+          (scenario.adoptionRates[service as keyof AdoptionRates] ?? 0) / 100;
         
         // Find entities from the potential pool that don't have this specific service yet
         const potentialForService = potentialSubscribers.filter(
@@ -389,7 +391,7 @@ export function KpiCards() {
         ),
         change: revenueChangeText,
         changeType: revenueChange >= 0 ? 'increase' : 'decrease',
-        icon: DollarSign,
+        icon: Euro,
       },
       {
         name: adoptionTitle,
@@ -424,6 +426,7 @@ export function KpiCards() {
     tariffs,
     revenueYear,
     costYear,
+    SERVICES
   ]);
 
   return (

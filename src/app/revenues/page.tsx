@@ -30,12 +30,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useScenarioStore, SERVICES, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
+import { useScenarioStore, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
+import { useServiceStore } from '@/hooks/use-service-store';
 import { useEntityStore } from "@/hooks/use-entity-store";
 import { useTariffStore } from "@/hooks/use-tariff-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
-
-const TABS = ['Cumulé', ...SERVICES];
+import { cn } from '@/lib/utils';
 
 type RevenueData = {
     year: number;
@@ -53,8 +53,13 @@ type ModalDetail = {
 
 export default function RevenuesPage() {
     const { scenario, startYear, endYear } = useScenarioStore();
+    const { services: serviceDefinitions } = useServiceStore();
     const { entities } = useEntityStore();
     const { tariffs } = useTariffStore();
+
+    const serviceNames = useMemo(() => serviceDefinitions.map(s => s.name), [serviceDefinitions]);
+    const TABS = useMemo(() => ['Cumulé', ...serviceNames], [serviceNames]);
+    
     const [activeTab, setActiveTab] = useState('Cumulé');
 
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -76,7 +81,7 @@ export default function RevenuesPage() {
                 let baseRevenue = 0;
                 let additionalRevenue = 0;
 
-                const servicesToCalculate = tab === 'Cumulé' ? SERVICES : [tab as Service];
+                const servicesToCalculate = tab === 'Cumulé' ? serviceNames : [tab as Service];
                 
                 servicesToCalculate.forEach(service => {
                     let serviceBaseRevenue = 0;
@@ -101,7 +106,7 @@ export default function RevenuesPage() {
                     });
 
                     const serviceKey = service as keyof AdoptionRates;
-                    const adoptionRatePercent = scenario.adoptionRates[serviceKey];
+                    const adoptionRatePercent = scenario.adoptionRates[serviceKey] ?? 0;
                     const serviceAdditionalRevenue = servicePotentialRevenue * (adoptionRatePercent / 100);
 
                     baseRevenue += serviceBaseRevenue;
@@ -124,12 +129,12 @@ export default function RevenuesPage() {
 
         return data;
 
-    }, [scenario, entities, tariffs, startYear, years]);
+    }, [scenario, entities, tariffs, startYear, years, TABS, serviceNames]);
 
     const handleYearClick = (year: number, serviceTab: string) => {
         const priceIncreaseFactor = Math.pow(1 + (scenario.priceIncrease / 100), year > startYear ? year - startYear : 0);
     
-        const servicesToConsider = serviceTab === 'Cumulé' ? SERVICES : [serviceTab as Service];
+        const servicesToConsider = serviceTab === 'Cumulé' ? serviceNames : [serviceTab as Service];
         
         const details: ModalDetail[] = [];
     
@@ -231,10 +236,28 @@ export default function RevenuesPage() {
                     </CardHeader>
                     <CardContent>
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                            <TabsList>
-                                {TABS.map((tab) => (
-                                    <TabsTrigger key={tab} value={tab}>
-                                        {tab}
+                            <TabsList className="bg-transparent p-0">
+                                <TabsTrigger
+                                    key='Cumulé'
+                                    value='Cumulé'
+                                    className={cn(
+                                        "rounded-none border-b-2 border-transparent p-2 transition-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-semibold data-[state=inactive]:opacity-60",
+                                        "data-[state=active]:border-primary data-[state=active]:text-primary"
+                                    )}
+                                >
+                                    Cumulé
+                                </TabsTrigger>
+                                {serviceDefinitions.map((service) => (
+                                    <TabsTrigger
+                                        key={service.name}
+                                        value={service.name}
+                                        style={activeTab === service.name ? { color: service.color } : {}}
+                                        className={cn(
+                                            "rounded-none border-b-2 border-transparent p-2 transition-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-semibold data-[state=inactive]:opacity-60",
+                                            "data-[state=active]:border-current"
+                                        )}
+                                    >
+                                        {service.name}
                                     </TabsTrigger>
                                 ))}
                             </TabsList>
@@ -336,3 +359,5 @@ export default function RevenuesPage() {
         </div>
     );
 }
+
+    

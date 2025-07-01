@@ -1,5 +1,6 @@
 
 import type { Metadata } from 'next';
+import { Poppins } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import {
@@ -12,6 +13,13 @@ import {
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { Toaster } from '@/components/ui/toaster';
 
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-poppins',
+});
+
 export const metadata: Metadata = {
   title: 'Vision Financière HSN',
   description: 'Projections financières interactives et planification de scénarios',
@@ -21,7 +29,7 @@ const HsnLogo = () => (
   <svg
     width="24"
     height="24"
-    viewBox="0 0 24 24"
+    viewBox="0 0 24"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className="text-primary"
@@ -57,12 +65,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      </head>
+    <html lang="fr" className={poppins.variable} suppressHydrationWarning>
+      <head />
       <body className={cn('font-body antialiased min-h-screen w-full bg-background text-foreground flex')}>
         <SidebarProvider defaultOpen>
             <Sidebar variant="inset" side="left" collapsible="icon" className="border-r">
