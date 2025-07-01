@@ -1,6 +1,5 @@
 'use client';
 import { create } from 'zustand';
-import { useServiceStore } from './use-service-store';
 
 export type Service = string;
 
@@ -33,10 +32,14 @@ type Actions = {
   setEndYear: (year: number) => void;
 };
 
-const initialAdoptionRates: AdoptionRates = useServiceStore.getState().getServiceNames().reduce((acc, name) => {
-    acc[name] = 0;
-    return acc;
-}, {} as AdoptionRates);
+// The following was causing a circular dependency by calling another store during initialization.
+// It's now hardcoded to match the initial services, breaking the dependency cycle.
+const initialAdoptionRates: AdoptionRates = {
+  "GEOTER": 0,
+  "SPANC": 0,
+  "ROUTE": 0,
+  "ADS": 0,
+};
 
 export const initialScenarioState: Scenario = {
   adoptionRates: initialAdoptionRates,
