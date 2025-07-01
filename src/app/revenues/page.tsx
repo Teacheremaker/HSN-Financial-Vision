@@ -51,6 +51,13 @@ type ModalDetail = {
     price: number;
 };
 
+const serviceColorMap: Record<string, string> = {
+    GEOTER: 'data-[state=active]:border-chart-1 text-chart-1',
+    SPANC: 'data-[state=active]:border-chart-2 text-chart-2',
+    ROUTE: 'data-[state=active]:border-chart-3 text-chart-3',
+    ADS: 'data-[state=active]:border-chart-5 text-chart-5',
+};
+
 export default function RevenuesPage() {
     const { scenario, startYear, endYear } = useScenarioStore();
     const { services: serviceDefinitions } = useServiceStore();
