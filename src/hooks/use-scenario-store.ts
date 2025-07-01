@@ -1,6 +1,5 @@
 'use client';
 import { create } from 'zustand';
-import { useServiceStore } from './use-service-store';
 
 export type Service = string;
 
