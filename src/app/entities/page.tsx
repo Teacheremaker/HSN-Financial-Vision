@@ -221,7 +221,7 @@ const generateCsv = (data: Entity[]): string => {
     };
 
     data.forEach(entity => {
-        const servicesString = entity.services.map(s => `${s.name}:${s.year}`).join(';');
+        const servicesString = entity.services.map(s => `${s.name}:${s.year}`).join(',');
         const row = [
             quote(entity.nom),
             quote(entity.population),
@@ -262,7 +262,7 @@ const parseCsv = (csvText: string): Entity[] => {
         }, {} as Record<string, any>);
 
         const services: ServiceSubscription[] = (rowData.services || '')
-            .split(';')
+            .split(',')
             .filter(Boolean)
             .map((s: string) => {
                 const [name, year] = s.split(':');
@@ -312,7 +312,7 @@ export default function EntitiesPage() {
 
   const handleExport = () => {
     const csvString = generateCsv(entities);
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
@@ -325,10 +325,10 @@ export default function EntitiesPage() {
 
   const handleExportTemplate = () => {
     const headers = "nom,population,type,entityType,statut,services";
-    const example1 = "# La colonne 'id' est optionnelle et sera générée automatiquement si absente.\n# Séparez les services par un point-virgule (;) et l'année par un deux-points (:).\n# Exemple pour la colonne services : \"GEOTER:2024;SPANC:2025\"";
+    const example1 = "# La colonne 'id' est optionnelle et sera générée automatiquement si absente.\n# Séparez les services par une virgule (,) et l'année par un deux-points (:).\n# Exemple pour la colonne services : \"GEOTER:2024,SPANC:2025\"";
     const example2 = "# Les valeurs possibles pour entityType sont : Commune, Syndicat, Communauté de communes, Communauté d'agglo, Département, Autre.";
     const csvString = `${headers}\n${example1}\n${example2}`;
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
