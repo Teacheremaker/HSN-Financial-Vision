@@ -62,6 +62,11 @@ export type MultiSelectOption = MultiSelectOptionPrimitive;
 export type ServiceDefinition = {
     name: string;
     color: string;
+<<<<<<< HEAD
 };
 
     
+=======
+    colorClass: string;
+};
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)

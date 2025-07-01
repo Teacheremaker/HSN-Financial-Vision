@@ -56,7 +56,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/layout/header';
+<<<<<<< HEAD
 import type { Entity, ServiceSubscription, EntityType, MultiSelectOption, ServiceDefinition } from '@/types';
+=======
+import type { Entity, ServiceSubscription, EntityType, MultiSelectOption } from '@/types';
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
 import {
   Select,
   SelectContent,
@@ -294,7 +298,11 @@ const parseCsv = (csvText: string): Entity[] => {
 
 export default function EntitiesPage() {
   const { entities, setEntities, updateEntity, deleteEntity, addEntity } = useEntityStore();
+<<<<<<< HEAD
   const { services: serviceDefinitions, getServiceNames } = useServiceStore();
+=======
+  const { getServiceNames } = useServiceStore();
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
   
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -313,6 +321,7 @@ export default function EntitiesPage() {
     return getServiceNames().map(name => ({ value: name, label: name }));
   }, [getServiceNames]);
   
+<<<<<<< HEAD
   const serviceColorMap = React.useMemo(() => 
     serviceDefinitions.reduce((acc, service) => {
       acc[service.name] = service.color;
@@ -320,6 +329,8 @@ export default function EntitiesPage() {
     }, {} as Record<string, string>),
   [serviceDefinitions]);
 
+=======
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
   const yearsWithServices = React.useMemo(() => {
     const years = [];
     for (let year = 2025; year <= 2032; year++) {
@@ -562,7 +573,10 @@ export default function EntitiesPage() {
         deleteEntity(entityId);
       },
       serviceOptions,
+<<<<<<< HEAD
       serviceColorMap,
+=======
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
     },
   });
 

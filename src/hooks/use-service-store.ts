@@ -1,8 +1,12 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
 'use client';
 
 import { create } from 'zustand';
 import { useScenarioStore } from './use-scenario-store';
+<<<<<<< HEAD
 import type { ServiceDefinition } from '@/types';
 import { useTariffStore } from './use-tariff-store';
 import { useCostStore } from './use-cost-store';
@@ -28,6 +32,28 @@ const initialServices: ServiceDefinition[] = [
     { name: "SPANC", color: "#40916c" },
     { name: "ROUTE", color: "#fcbf49" },
     { name: "ADS", color: "#9d4edd" },
+=======
+
+export type ServiceDefinition = {
+  name: string;
+  color: string;
+  colorClass: string;
+};
+
+const CHART_COLORS = [
+    { color: 'hsl(var(--chart-1))', colorClass: 'text-chart-1' },
+    { color: 'hsl(var(--chart-2))', colorClass: 'text-chart-2' },
+    { color: 'hsl(var(--chart-3))', colorClass: 'text-chart-3' },
+    { color: 'hsl(var(--chart-4))', colorClass: 'text-chart-4' },
+    { color: 'hsl(var(--chart-5))', colorClass: 'text-chart-5' },
+];
+
+const initialServices: ServiceDefinition[] = [
+    { name: "GEOTER", ...CHART_COLORS[0] },
+    { name: "SPANC", ...CHART_COLORS[1] },
+    { name: "ROUTE", ...CHART_COLORS[2] },
+    { name: "ADS", ...CHART_COLORS[4] },
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
 ];
 
 type State = {
@@ -35,23 +61,41 @@ type State = {
 };
 
 type Actions = {
+<<<<<<< HEAD
   addService: (name: string, color: string) => void;
   deleteService: (name: string) => void;
+=======
+  addService: (name: string) => void;
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
   getServiceNames: () => string[];
 };
 
 export const useServiceStore = create<State & Actions>((set, get) => ({
   services: initialServices,
+<<<<<<< HEAD
   addService: (name, color) => {
     const newService: ServiceDefinition = { name, color };
     
     set((state) => ({ 
         services: [...state.services, newService] 
     }));
+=======
+  addService: (name) => {
+    const currentServices = get().services;
+    const nextColor = CHART_COLORS[currentServices.length % CHART_COLORS.length];
+    
+    const newService: ServiceDefinition = {
+      name,
+      ...nextColor
+    };
+
+    set({ services: [...currentServices, newService] });
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
     
     // Also update the scenario store
     useScenarioStore.getState().addServiceToScenario(name);
   },
+<<<<<<< HEAD
   deleteService: (name) => {
     // Call cleanup functions in other stores first
     useScenarioStore.getState().removeServiceFromScenario(name);
@@ -64,5 +108,7 @@ export const useServiceStore = create<State & Actions>((set, get) => ({
       services: state.services.filter(service => service.name !== name),
     }));
   },
+=======
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
   getServiceNames: () => get().services.map(s => s.name),
 }));

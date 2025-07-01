@@ -127,10 +127,16 @@ export default function TariffsPage() {
                                 <TabsTrigger 
                                     key={service.name} 
                                     value={service.name}
+<<<<<<< HEAD
                                     style={activeTab === service.name ? { color: service.color } : {}}
                                     className={cn(
                                         "rounded-none border-b-2 border-transparent p-2 transition-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-semibold data-[state=inactive]:opacity-60",
                                         "data-[state=active]:border-current"
+=======
+                                    className={cn(
+                                        "rounded-none border-b-2 border-transparent p-2 transition-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-semibold data-[state=inactive]:opacity-60",
+                                        `data-[state=active]:border-current ${service.colorClass}`
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
                                     )}
                                 >
                                     {service.name}

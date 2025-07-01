@@ -1,6 +1,10 @@
 'use client';
 
+<<<<<<< HEAD
 import * as React from 'react';
+=======
+import { useState } from 'react';
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,6 +12,7 @@ import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+<<<<<<< HEAD
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useServiceStore, PALETTE_COLORS, type ServiceDefinition } from '@/hooks/use-service-store';
 import { useToast } from '@/hooks/use-toast';
@@ -32,11 +37,18 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+=======
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useServiceStore } from '@/hooks/use-service-store';
+import { useToast } from '@/hooks/use-toast';
+import { PlusCircle, Trash2 } from 'lucide-react';
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
 
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Le nom du service doit comporter au moins 2 caractères.",
   }),
+<<<<<<< HEAD
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, { 
     message: "La couleur doit être un code HEX valide (ex: #1a2b3c)." 
   }),
@@ -46,16 +58,30 @@ export default function ServicesPage() {
   const { services, addService, deleteService } = useServiceStore();
   const { toast } = useToast();
   const [serviceToDelete, setServiceToDelete] = React.useState<ServiceDefinition | null>(null);
+=======
+});
+
+export default function ServicesPage() {
+  const { services, addService } = useServiceStore();
+  const { toast } = useToast();
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+<<<<<<< HEAD
       color: "#3b82f6",
+=======
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+<<<<<<< HEAD
+=======
+    // Check for duplicates, ignoring case and spaces
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
     if (services.some(s => s.name.trim().toLowerCase() === values.name.trim().toLowerCase())) {
         toast({
             variant: "destructive",
@@ -65,7 +91,11 @@ export default function ServicesPage() {
         return;
     }
     
+<<<<<<< HEAD
     addService(values.name, values.color);
+=======
+    addService(values.name);
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
     toast({
         title: "Service ajouté",
         description: `Le service "${values.name}" a été créé avec succès.`,
@@ -73,6 +103,7 @@ export default function ServicesPage() {
     form.reset();
   }
 
+<<<<<<< HEAD
   const handleDeleteConfirm = () => {
     if (serviceToDelete) {
         deleteService(serviceToDelete.name);
@@ -84,6 +115,8 @@ export default function ServicesPage() {
     }
   };
 
+=======
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
   return (
     <div className="flex flex-col h-full">
       <Header title="Gestion des Services" />
@@ -97,8 +130,13 @@ export default function ServicesPage() {
                     </CardDescription>
                 </CardHeader>
                 <Form {...form}>
+<<<<<<< HEAD
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                         <CardContent className="space-y-6">
+=======
+                    <form onSubmit={form.handleSubmit(onSubmit)}>
+                        <CardContent>
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
                             <FormField
                             control={form.control}
                             name="name"
@@ -112,6 +150,7 @@ export default function ServicesPage() {
                                 </FormItem>
                             )}
                             />
+<<<<<<< HEAD
                             <FormField
                                 control={form.control}
                                 name="color"
@@ -185,6 +224,8 @@ export default function ServicesPage() {
                                     </FormItem>
                                 )}
                             />
+=======
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
                         </CardContent>
                         <CardFooter>
                             <Button type="submit">
@@ -211,6 +252,7 @@ export default function ServicesPage() {
                              <div className="h-4 w-4 rounded-full" style={{ backgroundColor: service.color }} />
                              <span className="font-medium">{service.name}</span>
                            </div>
+<<<<<<< HEAD
                            <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" className="h-8 w-8 p-0">
@@ -228,12 +270,19 @@ export default function ServicesPage() {
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+=======
+                           {/* Delete functionality can be added here later */}
+                           {/* <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                           </Button> */}
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
                         </li>
                     ))}
                 </ul>
               </CardContent>
             </Card>
         </div>
+<<<<<<< HEAD
         <AlertDialog open={!!serviceToDelete} onOpenChange={(open) => !open && setServiceToDelete(null)}>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -253,6 +302,8 @@ export default function ServicesPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+=======
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
       </main>
     </div>
   );

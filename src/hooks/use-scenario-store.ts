@@ -1,5 +1,6 @@
 'use client';
 import { create } from 'zustand';
+import { useServiceStore } from './use-service-store';
 
 export type Service = string;
 
@@ -27,11 +28,15 @@ type Actions = {
     value: number
   ) => void;
   addServiceToScenario: (serviceName: string) => void;
+<<<<<<< HEAD
   removeServiceFromScenario: (serviceName: string) => void;
+=======
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
   setStartYear: (year: number) => void;
   setEndYear: (year: number) => void;
 };
 
+<<<<<<< HEAD
 // The following was causing a circular dependency by calling another store during initialization.
 // It's now hardcoded to match the initial services, breaking the dependency cycle.
 const initialAdoptionRates: AdoptionRates = {
@@ -40,6 +45,12 @@ const initialAdoptionRates: AdoptionRates = {
   "ROUTE": 0,
   "ADS": 0,
 };
+=======
+const initialAdoptionRates: AdoptionRates = useServiceStore.getState().getServiceNames().reduce((acc, name) => {
+    acc[name] = 0;
+    return acc;
+}, {} as AdoptionRates);
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
 
 export const initialScenarioState: Scenario = {
   adoptionRates: initialAdoptionRates,
@@ -76,6 +87,7 @@ export const useScenarioStore = create<State & Actions>((set) => ({
       }
     }
   })),
+<<<<<<< HEAD
   removeServiceFromScenario: (serviceName: string) => set((state) => {
     const newAdoptionRates = { ...state.scenario.adoptionRates };
     delete newAdoptionRates[serviceName];
@@ -86,6 +98,8 @@ export const useScenarioStore = create<State & Actions>((set) => ({
       }
     };
   }),
+=======
+>>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
   setStartYear: (year) => set({ startYear: year }),
   setEndYear: (year) => set({ endYear: year }),
 }));
