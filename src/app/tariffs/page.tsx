@@ -127,9 +127,10 @@ export default function TariffsPage() {
                                 <TabsTrigger 
                                     key={service.name} 
                                     value={service.name}
+                                    style={activeTab === service.name ? { color: service.color } : {}}
                                     className={cn(
                                         "rounded-none border-b-2 border-transparent p-2 transition-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-semibold data-[state=inactive]:opacity-60",
-                                        `data-[state=active]:border-current ${service.colorClass}`
+                                        "data-[state=active]:border-current"
                                     )}
                                 >
                                     {service.name}
@@ -221,3 +222,5 @@ export default function TariffsPage() {
     </div>
   );
 }
+
+    

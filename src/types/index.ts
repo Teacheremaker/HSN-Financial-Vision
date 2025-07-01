@@ -1,3 +1,4 @@
+
 import type { MultiSelectOption as MultiSelectOptionPrimitive } from "@/components/ui/multi-select";
 
 export type KpiData = {
@@ -61,5 +62,6 @@ export type MultiSelectOption = MultiSelectOptionPrimitive;
 export type ServiceDefinition = {
     name: string;
     color: string;
-    colorClass: string;
 };
+
+    

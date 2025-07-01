@@ -1,6 +1,6 @@
+
 'use client';
 
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,15 +8,17 @@ import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useServiceStore } from '@/hooks/use-service-store';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useServiceStore, PALETTE_COLORS } from '@/hooks/use-service-store';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Le nom du service doit comporter au moins 2 caractères.",
   }),
+  color: z.string().min(1, { message: "Veuillez choisir une couleur."}),
 });
 
 export default function ServicesPage() {
@@ -27,11 +29,11 @@ export default function ServicesPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      color: "",
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // Check for duplicates, ignoring case and spaces
     if (services.some(s => s.name.trim().toLowerCase() === values.name.trim().toLowerCase())) {
         toast({
             variant: "destructive",
@@ -41,7 +43,7 @@ export default function ServicesPage() {
         return;
     }
     
-    addService(values.name);
+    addService(values.name, values.color);
     toast({
         title: "Service ajouté",
         description: `Le service "${values.name}" a été créé avec succès.`,
@@ -62,8 +64,8 @@ export default function ServicesPage() {
                     </CardDescription>
                 </CardHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)}>
-                        <CardContent>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                        <CardContent className="space-y-6">
                             <FormField
                             control={form.control}
                             name="name"
@@ -77,6 +79,37 @@ export default function ServicesPage() {
                                 </FormItem>
                             )}
                             />
+                             <FormField
+                                control={form.control}
+                                name="color"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Couleur du service</FormLabel>
+                                    <FormControl>
+                                       <div className="flex flex-wrap gap-2">
+                                            {PALETTE_COLORS.map((color) => (
+                                                <button
+                                                    type="button"
+                                                    key={color}
+                                                    className={cn(
+                                                        "h-8 w-8 rounded-full border-2 transition-transform",
+                                                        field.value === color
+                                                        ? "border-primary scale-110"
+                                                        : "border-transparent"
+                                                    )}
+                                                    style={{ backgroundColor: color }}
+                                                    onClick={() => field.onChange(color)}
+                                                />
+                                            ))}
+                                       </div>
+                                    </FormControl>
+                                    <FormDescription>
+                                        Cette couleur sera utilisée dans les graphiques et les onglets.
+                                    </FormDescription>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                                />
                         </CardContent>
                         <CardFooter>
                             <Button type="submit">
@@ -104,9 +137,6 @@ export default function ServicesPage() {
                              <span className="font-medium">{service.name}</span>
                            </div>
                            {/* Delete functionality can be added here later */}
-                           {/* <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                           </Button> */}
                         </li>
                     ))}
                 </ul>
@@ -117,3 +147,5 @@ export default function ServicesPage() {
     </div>
   );
 }
+
+    

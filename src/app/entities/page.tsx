@@ -56,7 +56,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/layout/header';
-import type { Entity, ServiceSubscription, EntityType, MultiSelectOption } from '@/types';
+import type { Entity, ServiceSubscription, EntityType, MultiSelectOption, ServiceDefinition } from '@/types';
 import {
   Select,
   SelectContent,
@@ -83,7 +83,12 @@ const EditableCell = ({ getValue, row, column, table }) => {
       return (
         <div className="flex flex-wrap gap-1">
           {services.map((service) => (
-            <Badge key={service.name} variant="secondary" className="font-normal">
+            <Badge 
+              key={service.name} 
+              variant="default" 
+              className="font-normal text-white"
+              style={{ backgroundColor: tableMeta?.serviceColorMap[service.name] ?? 'hsl(var(--muted))' }}
+            >
               {service.name} ({service.year})
             </Badge>
           ))}
@@ -211,9 +216,9 @@ const EditableCell = ({ getValue, row, column, table }) => {
 
 const generateCsv = (data: Entity[]): string => {
     const headers = ['nom', 'population', 'type', 'entityType', 'statut', 'services'];
-    const csvRows = [headers.join(',')];
+    const csvRows = [`\uFEFF${headers.join(',')}`]; // Add BOM for Excel
     const quote = (field: any) => {
-        const stringField = String(field);
+        const stringField = String(field ?? '');
         if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
             return `"${stringField.replace(/"/g, '""')}"`;
         }
@@ -289,7 +294,7 @@ const parseCsv = (csvText: string): Entity[] => {
 
 export default function EntitiesPage() {
   const { entities, setEntities, updateEntity, deleteEntity, addEntity } = useEntityStore();
-  const { getServiceNames } = useServiceStore();
+  const { services: serviceDefinitions, getServiceNames } = useServiceStore();
   
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -308,6 +313,13 @@ export default function EntitiesPage() {
     return getServiceNames().map(name => ({ value: name, label: name }));
   }, [getServiceNames]);
   
+  const serviceColorMap = React.useMemo(() => 
+    serviceDefinitions.reduce((acc, service) => {
+      acc[service.name] = service.color;
+      return acc;
+    }, {} as Record<string, string>),
+  [serviceDefinitions]);
+
   const yearsWithServices = React.useMemo(() => {
     const years = [];
     for (let year = 2025; year <= 2032; year++) {
@@ -318,7 +330,7 @@ export default function EntitiesPage() {
 
   const handleExport = () => {
     const csvString = generateCsv(entities);
-    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
@@ -331,9 +343,13 @@ export default function EntitiesPage() {
 
   const handleExportTemplate = () => {
     const headers = "nom,population,type,entityType,statut,services";
-    const example1 = "# La colonne 'id' est optionnelle et sera générée automatiquement si absente.\n# Séparez les services par une virgule (,) et l'année par un deux-points (:).\n# Exemple pour la colonne services : \"GEOTER:2024,SPANC:2025\"";
-    const example2 = "# Les valeurs possibles pour entityType sont : Commune, Syndicat, Communauté de communes, Communauté d'agglo, Département, Autre.";
-    const csvString = `${headers}\n${example1}\n${example2}`;
+    const comments = [
+        "# La colonne 'id' est optionnelle et sera générée automatiquement si absente.",
+        "# Séparez les services par une virgule (,) et l'année par un deux-points (:).",
+        "# Exemple pour la colonne services : \"GEOTER:2024,SPANC:2025\"",
+        "# Les valeurs possibles pour entityType sont : Commune, Syndicat, Communauté de communes, Communauté d'agglo, Département, Autre."
+    ].join('\n');
+    const csvString = `${headers}\n${comments}`;
     const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -546,6 +562,7 @@ export default function EntitiesPage() {
         deleteEntity(entityId);
       },
       serviceOptions,
+      serviceColorMap,
     },
   });
 
@@ -785,3 +802,5 @@ export default function EntitiesPage() {
     </div>
   );
 }
+
+    
