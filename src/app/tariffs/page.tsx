@@ -128,6 +128,7 @@ export default function TariffsPage() {
                                     key={service.name} 
                                     value={service.name}
 <<<<<<< HEAD
+<<<<<<< HEAD
                                     style={activeTab === service.name ? { color: service.color } : {}}
                                     className={cn(
                                         "rounded-none border-b-2 border-transparent p-2 transition-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-semibold data-[state=inactive]:opacity-60",
@@ -137,6 +138,12 @@ export default function TariffsPage() {
                                         "rounded-none border-b-2 border-transparent p-2 transition-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-semibold data-[state=inactive]:opacity-60",
                                         `data-[state=active]:border-current ${service.colorClass}`
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
+=======
+                                    style={activeTab === service.name ? { color: service.color } : {}}
+                                    className={cn(
+                                        "rounded-none border-b-2 border-transparent p-2 transition-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-semibold data-[state=inactive]:opacity-60",
+                                        "data-[state=active]:border-current"
+>>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
                                     )}
                                 >
                                     {service.name}

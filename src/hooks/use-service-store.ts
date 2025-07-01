@@ -1,11 +1,16 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
+=======
+
+>>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
 'use client';
 
 import { create } from 'zustand';
 import { useScenarioStore } from './use-scenario-store';
+<<<<<<< HEAD
 <<<<<<< HEAD
 import type { ServiceDefinition } from '@/types';
 import { useTariffStore } from './use-tariff-store';
@@ -33,27 +38,34 @@ const initialServices: ServiceDefinition[] = [
     { name: "ROUTE", color: "#fcbf49" },
     { name: "ADS", color: "#9d4edd" },
 =======
+=======
+import type { ServiceDefinition } from '@/types';
+>>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
 
-export type ServiceDefinition = {
-  name: string;
-  color: string;
-  colorClass: string;
-};
-
-const CHART_COLORS = [
-    { color: 'hsl(var(--chart-1))', colorClass: 'text-chart-1' },
-    { color: 'hsl(var(--chart-2))', colorClass: 'text-chart-2' },
-    { color: 'hsl(var(--chart-3))', colorClass: 'text-chart-3' },
-    { color: 'hsl(var(--chart-4))', colorClass: 'text-chart-4' },
-    { color: 'hsl(var(--chart-5))', colorClass: 'text-chart-5' },
+export const PALETTE_COLORS = [
+    'hsl(var(--chart-1))', 
+    'hsl(var(--chart-2))', 
+    'hsl(var(--chart-3))', 
+    'hsl(var(--chart-4))', 
+    'hsl(var(--chart-5))',
+    'hsl(262, 80%, 50%)', // A purple
+    'hsl(330, 80%, 55%)', // A pink
+    'hsl(210, 85%, 55%)', // A brighter blue
 ];
 
 const initialServices: ServiceDefinition[] = [
+<<<<<<< HEAD
     { name: "GEOTER", ...CHART_COLORS[0] },
     { name: "SPANC", ...CHART_COLORS[1] },
     { name: "ROUTE", ...CHART_COLORS[2] },
     { name: "ADS", ...CHART_COLORS[4] },
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
+=======
+    { name: "GEOTER", color: PALETTE_COLORS[0] },
+    { name: "SPANC", color: PALETTE_COLORS[1] },
+    { name: "ROUTE", color: PALETTE_COLORS[2] },
+    { name: "ADS", color: PALETTE_COLORS[4] },
+>>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
 ];
 
 type State = {
@@ -62,16 +74,21 @@ type State = {
 
 type Actions = {
 <<<<<<< HEAD
+<<<<<<< HEAD
   addService: (name: string, color: string) => void;
   deleteService: (name: string) => void;
 =======
   addService: (name: string) => void;
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
+=======
+  addService: (name: string, color: string) => void;
+>>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
   getServiceNames: () => string[];
 };
 
 export const useServiceStore = create<State & Actions>((set, get) => ({
   services: initialServices,
+<<<<<<< HEAD
 <<<<<<< HEAD
   addService: (name, color) => {
     const newService: ServiceDefinition = { name, color };
@@ -91,6 +108,14 @@ export const useServiceStore = create<State & Actions>((set, get) => ({
 
     set({ services: [...currentServices, newService] });
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
+=======
+  addService: (name, color) => {
+    const newService: ServiceDefinition = { name, color };
+    
+    set((state) => ({ 
+        services: [...state.services, newService] 
+    }));
+>>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
     
     // Also update the scenario store
     useScenarioStore.getState().addServiceToScenario(name);
@@ -112,3 +137,5 @@ export const useServiceStore = create<State & Actions>((set, get) => ({
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
   getServiceNames: () => get().services.map(s => s.name),
 }));
+
+    

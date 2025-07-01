@@ -63,6 +63,7 @@ export type ServiceDefinition = {
     name: string;
     color: string;
 <<<<<<< HEAD
+<<<<<<< HEAD
 };
 
     
@@ -70,3 +71,8 @@ export type ServiceDefinition = {
     colorClass: string;
 };
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
+=======
+};
+
+    
+>>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)

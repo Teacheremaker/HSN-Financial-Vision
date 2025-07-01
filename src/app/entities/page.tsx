@@ -57,10 +57,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/layout/header';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import type { Entity, ServiceSubscription, EntityType, MultiSelectOption, ServiceDefinition } from '@/types';
 =======
 import type { Entity, ServiceSubscription, EntityType, MultiSelectOption } from '@/types';
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
+=======
+import type { Entity, ServiceSubscription, EntityType, MultiSelectOption, ServiceDefinition } from '@/types';
+>>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
 import {
   Select,
   SelectContent,
@@ -299,10 +303,14 @@ const parseCsv = (csvText: string): Entity[] => {
 export default function EntitiesPage() {
   const { entities, setEntities, updateEntity, deleteEntity, addEntity } = useEntityStore();
 <<<<<<< HEAD
+<<<<<<< HEAD
   const { services: serviceDefinitions, getServiceNames } = useServiceStore();
 =======
   const { getServiceNames } = useServiceStore();
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
+=======
+  const { services: serviceDefinitions, getServiceNames } = useServiceStore();
+>>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
   
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -322,6 +330,9 @@ export default function EntitiesPage() {
   }, [getServiceNames]);
   
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
   const serviceColorMap = React.useMemo(() => 
     serviceDefinitions.reduce((acc, service) => {
       acc[service.name] = service.color;
@@ -329,8 +340,11 @@ export default function EntitiesPage() {
     }, {} as Record<string, string>),
   [serviceDefinitions]);
 
+<<<<<<< HEAD
 =======
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
+=======
+>>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
   const yearsWithServices = React.useMemo(() => {
     const years = [];
     for (let year = 2025; year <= 2032; year++) {
@@ -341,7 +355,7 @@ export default function EntitiesPage() {
 
   const handleExport = () => {
     const csvString = generateCsv(entities);
-    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
@@ -574,9 +588,13 @@ export default function EntitiesPage() {
       },
       serviceOptions,
 <<<<<<< HEAD
+<<<<<<< HEAD
       serviceColorMap,
 =======
 >>>>>>> 4ab641b (avoir la possibilité de créer un nouveau service et que celui ci soit re)
+=======
+      serviceColorMap,
+>>>>>>> a3ccb67 (quand on ajoute un nouveau service pouvoir définir une couleur au choix)
     },
   });
 
