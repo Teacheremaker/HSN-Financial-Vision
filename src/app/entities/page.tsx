@@ -79,21 +79,29 @@ const EditableCell = ({ getValue, row, column, table }) => {
   if (!isEditing) {
     if (column.id === 'services') {
       const services = getValue<ServiceSubscription[]>();
+      const { tariffs, serviceColorMap } = table.options.meta as any;
       if (!services || services.length === 0) {
         return <span className="text-muted-foreground">Aucun</span>;
       }
       return (
-        <div className="flex flex-wrap gap-1">
-          {services.map((service) => (
-            <Badge 
-              key={service.name} 
-              variant="default" 
-              className="font-normal text-white"
-              style={{ backgroundColor: tableMeta?.serviceColorMap[service.name] ?? 'hsl(var(--muted))' }}
-            >
-              {service.name} ({service.year})
-            </Badge>
-          ))}
+        <div className="flex flex-wrap gap-2 items-start">
+          {services.map((service) => {
+            const price = getTariffPriceForEntity(row.original as Entity, service.name, tariffs);
+            return (
+              <div key={service.name} className="flex flex-col items-center">
+                <Badge
+                  variant="default"
+                  className="font-normal text-white"
+                  style={{ backgroundColor: serviceColorMap[service.name] ?? 'hsl(var(--muted))' }}
+                >
+                  {service.name} ({service.year})
+                </Badge>
+                <span className="text-xs text-muted-foreground mt-1">
+                  {price.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+                </span>
+              </div>
+            )
+          })}
         </div>
       );
     }
@@ -606,6 +614,7 @@ export default function EntitiesPage() {
       },
       serviceOptions,
       serviceColorMap,
+      tariffs,
     },
   });
 
@@ -845,5 +854,7 @@ export default function EntitiesPage() {
     </div>
   );
 }
+
+    
 
     
