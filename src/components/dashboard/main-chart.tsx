@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useMemo } from "react";
@@ -26,6 +25,7 @@ import {
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useScenarioStore, type AdoptionRates, type Service } from "@/hooks/use-scenario-store";
 import { useChartFilterStore } from "@/hooks/use-chart-filter-store";
 import { useServiceStore } from "@/hooks/use-service-store";
@@ -33,6 +33,7 @@ import { useEntityStore } from "@/hooks/use-entity-store";
 import { useTariffStore } from "@/hooks/use-tariff-store";
 import { useCostStore } from "@/hooks/use-cost-store";
 import { getTariffPriceForEntity } from "@/lib/projections";
+import { Button } from "@/components/ui/button";
 
 const CustomTooltipContent = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -200,7 +201,7 @@ export function MainChart() {
             }
         });
 
-        // Potential revenue from inactive entities
+        // Potential from inactive entities
         entities.filter(e => e.statut === 'Inactif').forEach(entity => {
             const subscription = entity.services.find(s => s.name === service);
             if(!subscription) {
