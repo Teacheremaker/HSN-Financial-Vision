@@ -68,6 +68,8 @@ import { MultiSelect } from '@/components/ui/multi-select';
 import { Label } from '@/components/ui/label';
 import { useEntityStore } from '@/hooks/use-entity-store';
 import { useServiceStore } from '@/hooks/use-service-store';
+import { useTariffStore } from '@/hooks/use-tariff-store';
+import { getTariffPriceForEntity } from '@/lib/projections';
 
 const EditableCell = ({ getValue, row, column, table }) => {
   const initialValue = getValue();
@@ -295,6 +297,7 @@ const parseCsv = (csvText: string): Entity[] => {
 export default function EntitiesPage() {
   const { entities, setEntities, updateEntity, deleteEntity, addEntity } = useEntityStore();
   const { services: serviceDefinitions, getServiceNames } = useServiceStore();
+  const { tariffs } = useTariffStore();
   
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -431,6 +434,46 @@ export default function EntitiesPage() {
       cell: EditableCell,
     },
     {
+        id: 'totalPricePerInhabitant',
+        header: ({ column }) => (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Prix total / hab.
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+        ),
+        accessorFn: (row) => {
+            if (!row.population || row.population === 0) {
+                return 0;
+            }
+            const totalAnnualCost = row.services.reduce((acc, service) => {
+                const price = getTariffPriceForEntity(row, service.name, tariffs);
+                return acc + price;
+            }, 0);
+            return totalAnnualCost / row.population;
+        },
+        cell: ({ row }) => {
+            const pricePerInhabitant = row.getValue<number>('totalPricePerInhabitant');
+
+            if (pricePerInhabitant === 0 && (!row.original.population || row.original.services.length === 0)) {
+                return <div className="text-right text-muted-foreground">-</div>;
+            }
+
+            return (
+                <div className="text-right font-medium">
+                    {pricePerInhabitant.toLocaleString('fr-FR', {
+                        style: 'currency',
+                        currency: 'EUR',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    })}
+                </div>
+            );
+        },
+    },
+    {
         accessorKey: 'type',
         header: ({ column }) => (
             <Button
@@ -530,7 +573,7 @@ export default function EntitiesPage() {
         );
       },
     },
-  ], []);
+  ], [tariffs]);
 
   const table = useReactTable({
     data: entities,
@@ -802,3 +845,5 @@ export default function EntitiesPage() {
     </div>
   );
 }
+
+    
